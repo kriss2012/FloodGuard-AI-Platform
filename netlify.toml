@@ -1,6 +1,6 @@
 [build]
   base = "app"
-  command = "npm run build"
+  command = "npm ci && npm run build"
   publish = "app/dist"
 
 [[redirects]]
