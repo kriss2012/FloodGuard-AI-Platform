@@ -1,74 +1,51 @@
-# React + TypeScript + Vite\
-livwe link https://live-flood.netlify.app/
+# 🌊 FloodGuard AI - ET AI Hackathon 2026
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**FloodGuard AI** is an advanced, domain-specific AI Agent platform designed for real-time flood monitoring, prediction, and autonomous disaster response. Built for the **ET AI Hackathon 2026** (Problem Statement 5: Domain-Specialized AI Agents).
 
-Currently, two official plugins are available:
+## 🚀 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Real-Time Data Sync**: Integrated with **Open-Meteo Weather & Flood APIs** for live telemetry from across India.
+- **Agentic AI Command Center**: An autonomous AI agent that analyzes sensor data, reasons through complex scenarios (Chain of Thought), and executes emergency response protocols without human intervention.
+- **Predictive Analytics**: Machine learning models that forecast water levels and flood risks 7 days in advance.
+- **Interactive Map**: Live leaflet-based risk mapping with real-time severity indicators.
+- **Compliance Guardrails**: Ensuring all autonomous actions adhere to regional safety and legal protocols.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS, Shadcn/UI
+- **Charts**: Recharts
+- **Mapping**: React-Leaflet (OpenStreetMap)
+- **Data**: Open-Meteo (Real-time Weather & Flood APIs)
+- **Icons**: Lucide-React
 
-## Expanding the ESLint configuration
+## 📦 Setup & Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1.  **Clone the Repository**:
+    ```bash
+    git clone [repository-url]
+    cd FloodGuard-AI-Platform/app
+    ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+3.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4.  **Environment Variables**:
+    *Currently using free Open-Meteo APIs (no key required).* To add OpenWeatherMap or other services, create a `.env` file from `.env.example`.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🏆 Hackathon Alignment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This project specifically addresses **Problem Statement 5: Domain-Specialized AI Agents with Compliance Guardrails**. It demonstrates:
+- **Full Task Completion**: From sensor monitoring to autonomous decision-making.
+- **Multi-modal Inputs**: Weather patterns + River discharge levels.
+- **Auditability**: Every AI decision is logged with clear reasoning and guardrail verification.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+*Created for ET AI Hackathon 2026*
