@@ -58,15 +58,12 @@ import html2canvas from 'html2canvas';
 
 import { 
   sensorLocations, 
-  waterLevelData, 
-  weatherData, 
-  floodAlerts, 
-  aiPredictions,
   historicalEvents,
-  dashboardStats,
   generateTimeSeriesData,
   generateForecastData
 } from '@/data/mockData';
+import { useRealTimeData } from '@/hooks/useRealTimeData';
+import { AgentPanel } from '@/components/AgentPanel';
 import type { FloodAlert } from '@/types/flood';
 
 // Custom map markers
@@ -128,7 +125,16 @@ const getRiskColor = (risk: string) => {
 
 export default function App() {
   const [selectedSensor, setSelectedSensor] = useState<string>('all');
-  const [alerts, setAlerts] = useState<FloodAlert[]>(floodAlerts);
+  const { 
+    waterLevels: waterLevelData, 
+    weatherData, 
+    predictions: aiPredictions, 
+    alerts, 
+    setAlerts,
+    isLoading,
+    lastUpdated,
+    refresh
+  } = useRealTimeData();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -136,12 +142,12 @@ export default function App() {
   const filteredWaterData = useMemo(() => {
     if (selectedSensor === 'all') return waterLevelData;
     return waterLevelData.filter(w => w.sensorId === selectedSensor);
-  }, [selectedSensor]);
+  }, [selectedSensor, waterLevelData]);
 
   const filteredWeatherData = useMemo(() => {
     if (selectedSensor === 'all') return weatherData;
     return weatherData.filter(w => w.sensorId === selectedSensor);
-  }, [selectedSensor]);
+  }, [selectedSensor, weatherData]);
 
   const filteredAlerts = useMemo(() => {
     if (selectedSensor === 'all') return alerts;
@@ -151,12 +157,26 @@ export default function App() {
   const filteredPredictions = useMemo(() => {
     if (selectedSensor === 'all') return aiPredictions;
     return aiPredictions.filter(p => p.sensorId === selectedSensor);
-  }, [selectedSensor]);
+  }, [selectedSensor, aiPredictions]);
 
   const selectedSensorData = useMemo(() => {
     if (selectedSensor === 'all') return null;
     return sensorLocations.find(s => s.id === selectedSensor);
   }, [selectedSensor]);
+
+  // Derived dashboard stats
+  const dashboardStats = useMemo(() => {
+    return {
+      totalSensors: sensorLocations.length,
+      activeAlerts: alerts.filter(a => !a.isRead).length,
+      sensorsInWarning: waterLevelData.filter(w => w.status === 'warning').length,
+      sensorsInDanger: waterLevelData.filter(w => w.status === 'danger').length,
+      avgRainfall24h: weatherData.length > 0 
+        ? (weatherData.reduce((acc, curr) => acc + curr.rainfall, 0) / weatherData.length).toFixed(1)
+        : 0,
+      predictedFloods: aiPredictions.filter(p => p.riskLevel === 'high' || p.riskLevel === 'critical').length,
+    };
+  }, [waterLevelData, weatherData, aiPredictions, alerts]);
 
   const timeSeriesData = useMemo(() => {
     const sensor = selectedSensor === 'all' ? 'S001' : selectedSensor;
@@ -242,8 +262,15 @@ export default function App() {
                   <Waves className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white">FloodGuard AI</h1>
-                  <p className="text-xs text-slate-400">AI-Powered Flood Detection & Monitoring</p>
+                  <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                    FloodGuard AI
+                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-[10px] py-0">ET AI HACKATHON 2026</Badge>
+                  </h1>
+                  <p className="text-xs text-slate-400 flex items-center gap-2">
+                    AI-Powered Flood Detection & Monitoring 
+                    <span className="w-1 h-1 rounded-full bg-slate-700" />
+                    Last Sync: {format(lastUpdated, 'HH:mm:ss')}
+                  </p>
                 </div>
               </div>
               
@@ -263,14 +290,23 @@ export default function App() {
                   </SelectContent>
                 </Select>
 
-                <Button
-                  onClick={() => setShowReportDialog(true)}
-                  variant="outline"
-                  className="border-slate-600 text-slate-300 hover:bg-slate-800"
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Report
-                </Button>
+                  <Button
+                    onClick={refresh}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Activity className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                    Sync
+                  </Button>
+                  <Button
+                    onClick={() => setShowReportDialog(true)}
+                    variant="outline"
+                    className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Report
+                  </Button>
               </div>
             </div>
           </div>
@@ -378,9 +414,9 @@ export default function App() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Water Level Chart */}
-                <Card className="lg:col-span-2 bg-slate-900/50 border-slate-800">
+                <Card className="lg:col-span-3 bg-slate-900/50 border-slate-800">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <Droplets className="w-5 h-5 text-cyan-400" />
@@ -391,7 +427,7 @@ export default function App() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[350px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={timeSeriesData}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -426,8 +462,15 @@ export default function App() {
                   </CardContent>
                 </Card>
 
-                {/* Current Status */}
-                <Card className="bg-slate-900/50 border-slate-800">
+                {/* AI Agent Panel */}
+                <div className="lg:col-span-1">
+                  <AgentPanel />
+                </div>
+              </div>
+
+              {/* Status & Weather Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-1 bg-slate-900/50 border-slate-800">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <Activity className="w-5 h-5 text-emerald-400" />
@@ -464,40 +507,40 @@ export default function App() {
                     </ScrollArea>
                   </CardContent>
                 </Card>
-              </div>
 
-              {/* Weather Data */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {filteredWeatherData.slice(0, selectedSensor === 'all' ? 4 : 1).map((weather) => {
-                  const sensor = sensorLocations.find(s => s.id === weather.sensorId);
-                  return (
-                    <Card key={weather.sensorId} className="bg-slate-900/50 border-slate-800">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-slate-400">{sensor?.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="flex items-center gap-2">
-                            <Thermometer className="w-4 h-4 text-orange-400" />
-                            <span className="text-white">{weather.temperature}°C</span>
+                {/* Weather Data */}
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredWeatherData.slice(0, selectedSensor === 'all' ? 4 : 1).map((weather) => {
+                    const sensor = sensorLocations.find(s => s.id === weather.sensorId);
+                    return (
+                      <Card key={weather.sensorId} className="bg-slate-900/50 border-slate-800">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm text-slate-400">{sensor?.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-2">
+                              <Thermometer className="w-4 h-4 text-orange-400" />
+                              <span className="text-white">{weather.temperature.toFixed(1)}°C</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Droplets className="w-4 h-4 text-blue-400" />
+                              <span className="text-white">{weather.humidity}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CloudRain className="w-4 h-4 text-cyan-400" />
+                              <span className="text-white">{weather.rainfall.toFixed(1)}mm</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Wind className="w-4 h-4 text-emerald-400" />
+                              <span className="text-white">{weather.windSpeed.toFixed(1)}km/h</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Droplets className="w-4 h-4 text-blue-400" />
-                            <span className="text-white">{weather.humidity}%</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <CloudRain className="w-4 h-4 text-cyan-400" />
-                            <span className="text-white">{weather.rainfall24h}mm</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Wind className="w-4 h-4 text-emerald-400" />
-                            <span className="text-white">{weather.windSpeed}km/h</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
             </TabsContent>
 
