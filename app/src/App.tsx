@@ -3,7 +3,7 @@ import {
   MapPin, Droplets, CloudRain, Wind, Thermometer, AlertTriangle, Bell, History,
   FileDown, Activity, Users, Clock, TrendingUp, TrendingDown, Minus, Filter,
   Download, CheckCircle2, XCircle, Brain, Gauge, Waves, Navigation, RefreshCw,
-  Network, BarChart3, Trophy, ChevronRight, Shield
+  Network, BarChart3, Trophy, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
