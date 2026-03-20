@@ -1,28 +1,9 @@
 import { useState, useRef, useMemo } from 'react';
 import { 
-  MapPin, 
-  Droplets, 
-  CloudRain, 
-  Wind, 
-  Thermometer, 
-  AlertTriangle, 
-  Bell, 
-  History, 
-  FileDown, 
-  Activity,
-  Users,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Filter,
-  Download,
-  CheckCircle2,
-  XCircle,
-  Brain,
-  Gauge,
-  Waves,
-  Navigation
+  MapPin, Droplets, CloudRain, Wind, Thermometer, AlertTriangle, Bell, History,
+  FileDown, Activity, Users, Clock, TrendingUp, TrendingDown, Minus, Filter,
+  Download, CheckCircle2, XCircle, Brain, Gauge, Waves, Navigation, RefreshCw,
+  Network, BarChart3, Trophy, ChevronRight, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -34,19 +15,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { 
-  Area, 
-  AreaChart,
-  Line,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  ComposedChart
+  Area, AreaChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, BarChart, Bar, ComposedChart, RadarChart, PolarGrid,
+  PolarAngleAxis, Radar
 } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Icon } from 'leaflet';
@@ -56,449 +29,319 @@ import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-import { 
-  sensorLocations, 
-  historicalEvents,
-  generateTimeSeriesData,
-  generateForecastData
-} from '@/data/mockData';
+import { sensorLocations, historicalEvents, generateTimeSeriesData, generateForecastData } from '@/data/mockData';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
 import { AgentPanel } from '@/components/AgentPanel';
-import type { FloodAlert } from '@/types/flood';
+import { ArchitecturePage } from '@/components/ArchitecturePage';
+import { ImpactModelPage } from '@/components/ImpactModelPage';
 
-// Custom map markers
-const safeIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTBhOTgxIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+// Map icons
+const makeIcon = (color: string) => new Icon({
+  iconUrl: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="${color}"/></svg>`)}`,
+  iconSize: [28, 28], iconAnchor: [14, 14],
 });
+const safeIcon = makeIcon('#10a981');
+const warningIcon = makeIcon('#f97316');
+const dangerIcon = makeIcon('#ef4444');
 
-const warningIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZjk3MzE2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+const getStatusIcon = (s: string) => ({
+  danger: <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse inline-block" />,
+  warning: <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />,
+  safe: <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />,
+}[s] ?? <span className="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block" />);
 
-const dangerIcon = new Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWY0NDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+const getTrendIcon = (t: string) => ({
+  rising: <TrendingUp className="w-3.5 h-3.5 text-red-400" />,
+  falling: <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />,
+  stable: <Minus className="w-3.5 h-3.5 text-slate-400" />,
+}[t] ?? null);
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'safe': return <div className="w-3 h-3 rounded-full bg-emerald-500" />;
-    case 'warning': return <div className="w-3 h-3 rounded-full bg-amber-500" />;
-    case 'danger': return <div className="w-3 h-3 rounded-full bg-red-500" />;
-    default: return <div className="w-3 h-3 rounded-full bg-slate-500" />;
-  }
-};
+const getSeverityColor = (s: string) => ({
+  critical: 'bg-red-500/15 text-red-300 border-red-500/25',
+  high: 'bg-orange-500/15 text-orange-300 border-orange-500/25',
+  medium: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+  low: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
+}[s] ?? 'bg-slate-500/15 text-slate-300 border-slate-500/25');
 
-const getTrendIcon = (trend: string) => {
-  switch (trend) {
-    case 'rising': return <TrendingUp className="w-4 h-4 text-red-500" />;
-    case 'falling': return <TrendingDown className="w-4 h-4 text-emerald-500" />;
-    case 'stable': return <Minus className="w-4 h-4 text-slate-500" />;
-    default: return null;
-  }
-};
-
-const getSeverityColor = (severity: string) => {
-  switch (severity) {
-    case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
-    case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-    case 'medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
-  }
-};
-
-const getRiskColor = (risk: string) => {
-  switch (risk) {
-    case 'critical': return 'text-red-500';
-    case 'high': return 'text-orange-500';
-    case 'medium': return 'text-amber-500';
-    case 'low': return 'text-emerald-500';
-    default: return 'text-slate-500';
-  }
-};
+const getRiskColor = (r: string) => ({
+  critical: 'text-red-400', high: 'text-orange-400', medium: 'text-amber-400', low: 'text-emerald-400',
+}[r] ?? 'text-slate-400');
 
 export default function App() {
   const [selectedSensor, setSelectedSensor] = useState<string>('all');
-  const { 
-    waterLevels: waterLevelData, 
-    weatherData, 
-    predictions: aiPredictions, 
-    alerts, 
-    setAlerts,
-    isLoading,
-    lastUpdated,
-    refresh
-  } = useRealTimeData();
+  const { waterLevels, weatherData, predictions, alerts, agentLogs, isLoading, lastUpdated, refresh, setAlerts } = useRealTimeData();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // Filter data based on selected sensor
-  const filteredWaterData = useMemo(() => {
-    if (selectedSensor === 'all') return waterLevelData;
-    return waterLevelData.filter(w => w.sensorId === selectedSensor);
-  }, [selectedSensor, waterLevelData]);
+  const filteredWater = useMemo(() =>
+    selectedSensor === 'all' ? waterLevels : waterLevels.filter(w => w.sensorId === selectedSensor),
+    [selectedSensor, waterLevels]);
 
-  const filteredWeatherData = useMemo(() => {
-    if (selectedSensor === 'all') return weatherData;
-    return weatherData.filter(w => w.sensorId === selectedSensor);
-  }, [selectedSensor, weatherData]);
+  const filteredWeather = useMemo(() =>
+    selectedSensor === 'all' ? weatherData : weatherData.filter(w => w.sensorId === selectedSensor),
+    [selectedSensor, weatherData]);
 
-  const filteredAlerts = useMemo(() => {
-    if (selectedSensor === 'all') return alerts;
-    return alerts.filter(a => a.sensorId === selectedSensor);
-  }, [alerts, selectedSensor]);
+  const filteredAlerts = useMemo(() =>
+    selectedSensor === 'all' ? alerts : alerts.filter(a => a.sensorId === selectedSensor),
+    [selectedSensor, alerts]);
 
-  const filteredPredictions = useMemo(() => {
-    if (selectedSensor === 'all') return aiPredictions;
-    return aiPredictions.filter(p => p.sensorId === selectedSensor);
-  }, [selectedSensor, aiPredictions]);
+  const filteredPredictions = useMemo(() =>
+    selectedSensor === 'all' ? predictions : predictions.filter(p => p.sensorId === selectedSensor),
+    [selectedSensor, predictions]);
 
-  const selectedSensorData = useMemo(() => {
-    if (selectedSensor === 'all') return null;
-    return sensorLocations.find(s => s.id === selectedSensor);
-  }, [selectedSensor]);
+  const selectedSensorData = useMemo(() =>
+    selectedSensor === 'all' ? null : sensorLocations.find(s => s.id === selectedSensor),
+    [selectedSensor]);
 
-  // Derived dashboard stats
-  const dashboardStats = useMemo(() => {
-    return {
-      totalSensors: sensorLocations.length,
-      activeAlerts: alerts.filter(a => !a.isRead).length,
-      sensorsInWarning: waterLevelData.filter(w => w.status === 'warning').length,
-      sensorsInDanger: waterLevelData.filter(w => w.status === 'danger').length,
-      avgRainfall24h: weatherData.length > 0 
-        ? (weatherData.reduce((acc, curr) => acc + curr.rainfall, 0) / weatherData.length).toFixed(1)
-        : 0,
-      predictedFloods: aiPredictions.filter(p => p.riskLevel === 'high' || p.riskLevel === 'critical').length,
-    };
-  }, [waterLevelData, weatherData, aiPredictions, alerts]);
+  const stats = useMemo(() => ({
+    total: sensorLocations.length,
+    active: alerts.filter(a => !a.isRead).length,
+    warning: waterLevels.filter(w => w.status === 'warning').length,
+    danger: waterLevels.filter(w => w.status === 'danger').length,
+    rainfall: weatherData.length > 0
+      ? (weatherData.reduce((s, w) => s + w.rainfall, 0) / weatherData.length).toFixed(1)
+      : '—',
+    predictions: predictions.filter(p => p.riskLevel === 'high' || p.riskLevel === 'critical').length,
+  }), [waterLevels, weatherData, alerts, predictions]);
 
   const timeSeriesData = useMemo(() => {
-    const sensor = selectedSensor === 'all' ? 'S001' : selectedSensor;
-    return generateTimeSeriesData(sensor, 24);
+    const s = selectedSensor === 'all' ? 'S001' : selectedSensor;
+    return generateTimeSeriesData(s, 24);
   }, [selectedSensor]);
 
   const forecastData = useMemo(() => {
-    const sensor = selectedSensor === 'all' ? 'S001' : selectedSensor;
-    return generateForecastData(sensor, 24);
+    const s = selectedSensor === 'all' ? 'S001' : selectedSensor;
+    return generateForecastData(s, 24);
   }, [selectedSensor]);
 
-  const markAlertAsRead = (alertId: string) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, isRead: true } : a));
-    toast.success('Alert marked as read');
-  };
-
-  const dismissAlert = (alertId: string) => {
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
-    toast.success('Alert dismissed');
-  };
+  const radarData = useMemo(() => [
+    { subject: 'Water Level', value: stats.danger * 20 + stats.warning * 10 },
+    { subject: 'Rainfall', value: parseFloat(String(stats.rainfall)) || 0 },
+    { subject: 'AI Confidence', value: 91 },
+    { subject: 'Coverage', value: (waterLevels.length / sensorLocations.length) * 100 },
+    { subject: 'Response', value: 88 },
+  ], [stats, waterLevels.length]);
 
   const generatePDF = async () => {
     if (!reportRef.current) return;
-    
     try {
       const canvas = await html2canvas(reportRef.current);
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 297;
+      const imgWidth = 210, pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`FloodGuard-Report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('Report downloaded successfully');
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+      pdf.save(`FloodGuard-Report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+      toast.success('Report downloaded!');
       setShowReportDialog(false);
-    } catch (error) {
-      toast.error('Failed to generate report');
-    }
+    } catch { toast.error('PDF generation failed'); }
   };
 
   const downloadCSV = () => {
-    const csvContent = [
-      ['Sensor ID', 'Location', 'Current Level', 'Warning Level', 'Danger Level', 'Status', 'Trend'].join(','),
-      ...waterLevelData.map(w => {
-        const sensor = sensorLocations.find(s => s.id === w.sensorId);
-        return [w.sensorId, sensor?.name, w.currentLevel, w.warningLevel, w.dangerLevel, w.status, w.trend].join(',');
+    const rows = [
+      ['Sensor', 'Location', 'River', 'State', 'Level (m)', 'Danger (m)', 'Status', 'Trend'],
+      ...waterLevels.map(w => {
+        const loc = sensorLocations.find(s => s.id === w.sensorId);
+        return [w.sensorId, loc?.name, loc?.river, loc?.state, w.currentLevel.toFixed(2), w.dangerLevel, w.status, w.trend];
       })
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FloodGuard-Data-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    toast.success('CSV downloaded successfully');
+    ].map(r => r.join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([rows], { type: 'text/csv' })),
+      download: `FloodGuard-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+    });
+    document.body.appendChild(a); a.click(); a.remove();
+    toast.success('CSV exported!');
   };
+
+  const markRead = (id: string) => { setAlerts(p => p.map(a => a.id === id ? { ...a, isRead: true } : a)); toast.success('Marked as read'); };
+  const dismiss = (id: string) => { setAlerts(p => p.filter(a => a.id !== id)); toast.success('Alert dismissed'); };
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-slate-950">
-        {/* Header */}
-        <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  <Waves className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                    FloodGuard AI
-                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-[10px] py-0">ET AI HACKATHON 2026</Badge>
-                  </h1>
-                  <p className="text-xs text-slate-400 flex items-center gap-2">
-                    AI-Powered Flood Detection & Monitoring 
-                    <span className="w-1 h-1 rounded-full bg-slate-700" />
-                    Last Sync: {format(lastUpdated, 'HH:mm:ss')}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <Select value={selectedSensor} onValueChange={setSelectedSensor}>
-                  <SelectTrigger className="w-[220px] bg-slate-800 border-slate-700 text-white">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="all" className="text-white hover:bg-slate-700">All Locations</SelectItem>
-                    {sensorLocations.map((sensor) => (
-                      <SelectItem key={sensor.id} value={sensor.id} className="text-white hover:bg-slate-700">
-                        {sensor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <div className="min-h-screen bg-slate-950 font-sans">
+        <Toaster richColors position="top-right" />
 
-                  <Button
-                    onClick={refresh}
-                    disabled={isLoading}
-                    variant="outline"
-                    className="border-slate-600 text-slate-300 hover:bg-slate-800"
-                  >
-                    <Activity className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Sync
-                  </Button>
-                  <Button
-                    onClick={() => setShowReportDialog(true)}
-                    variant="outline"
-                    className="border-slate-600 text-slate-300 hover:bg-slate-800"
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Report
-                  </Button>
+        {/* ── Header ── */}
+        <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            {/* Brand */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Waves className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-white leading-none">FloodGuard AI</h1>
+                  <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 text-[9px] py-0 px-1.5 font-semibold tracking-wide">
+                    ET HACKATHON 2026
+                  </Badge>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Autonomous Flood Intelligence · PS#5 · Updated {isLoading ? '…' : format(lastUpdated, 'HH:mm:ss')}
+                </p>
+              </div>
+            </div>
+
+            {/* Sensor Select */}
+            <Select value={selectedSensor} onValueChange={setSelectedSensor}>
+              <SelectTrigger className="w-[200px] bg-slate-900 border-slate-700 text-white text-sm h-8">
+                <MapPin className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
+                <SelectValue placeholder="All Locations" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-700">
+                <SelectItem value="all" className="text-white text-sm">All Locations</SelectItem>
+                {sensorLocations.map(s => (
+                  <SelectItem key={s.id} value={s.id} className="text-white text-sm">{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={refresh} disabled={isLoading}
+                className="border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 h-8 px-3">
+                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
+                Sync
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowReportDialog(true)}
+                className="border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 h-8 px-3">
+                <FileDown className="w-3.5 h-3.5 mr-1.5" /> Report
+              </Button>
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] text-emerald-400 font-medium">LIVE</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Gauge className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{dashboardStats.totalSensors}</p>
-                    <p className="text-xs text-slate-400">Total Sensors</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-red-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{alerts.filter(a => !a.isRead).length}</p>
-                    <p className="text-xs text-slate-400">Active Alerts</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{dashboardStats.sensorsInWarning}</p>
-                    <p className="text-xs text-slate-400">Warning Stage</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-red-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{dashboardStats.sensorsInDanger}</p>
-                    <p className="text-xs text-slate-400">Danger Stage</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                    <CloudRain className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{dashboardStats.avgRainfall24h}mm</p>
-                    <p className="text-xs text-slate-400">Avg Rainfall (24h)</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <Brain className="w-5 h-5 text-violet-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">{dashboardStats.predictedFloods}</p>
-                    <p className="text-xs text-slate-400">AI Predictions</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-5 space-y-5">
+          {/* ── Stats Strip ── */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {[
+              { label: 'Sensors', val: stats.total, icon: Gauge, color: 'cyan' },
+              { label: 'Active Alerts', val: stats.active, icon: Bell, color: 'red' },
+              { label: 'Warning', val: stats.warning, icon: AlertTriangle, color: 'amber' },
+              { label: 'Danger', val: stats.danger, icon: Activity, color: 'red' },
+              { label: 'Rainfall mm/hr', val: stats.rainfall, icon: CloudRain, color: 'blue' },
+              { label: 'High Risk', val: stats.predictions, icon: Brain, color: 'violet' },
+            ].map(s => {
+              const Icon = s.icon;
+              const cls: Record<string, string> = {
+                cyan: 'bg-cyan-500/10 text-cyan-400',
+                red: 'bg-red-500/10 text-red-400',
+                amber: 'bg-amber-500/10 text-amber-400',
+                blue: 'bg-blue-500/10 text-blue-400',
+                violet: 'bg-violet-500/10 text-violet-400',
+              };
+              return (
+                <Card key={s.label} className="bg-slate-900/60 border-slate-800 hover:border-slate-700 transition-all">
+                  <CardContent className="p-3 flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg ${cls[s.color]} flex items-center justify-center shrink-0`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-white leading-none">{s.val}</p>
+                      <p className="text-[9px] text-slate-500 uppercase tracking-wide mt-0.5">{s.label}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Main Dashboard Tabs */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-slate-900 border border-slate-800">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-slate-800">Overview</TabsTrigger>
-              <TabsTrigger value="map" className="data-[state=active]:bg-slate-800">Live Map</TabsTrigger>
-              <TabsTrigger value="analytics" className="data-[state=active]:bg-slate-800">Analytics</TabsTrigger>
-              <TabsTrigger value="alerts" className="data-[state=active]:bg-slate-800">Alerts</TabsTrigger>
-              <TabsTrigger value="predictions" className="data-[state=active]:bg-slate-800">AI Predictions</TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-slate-800">History</TabsTrigger>
+          {/* ── Main Tabs ── */}
+          <Tabs defaultValue="overview">
+            <TabsList className="bg-slate-900/80 border border-slate-800 flex-wrap h-auto gap-1 p-1">
+              {[
+                { val: 'overview', label: 'Overview', icon: Activity },
+                { val: 'map', label: 'Live Map', icon: Navigation },
+                { val: 'analytics', label: 'Analytics', icon: BarChart3 },
+                { val: 'alerts', label: `Alerts (${stats.active})`, icon: Bell },
+                { val: 'predictions', label: 'AI Predictions', icon: Brain },
+                { val: 'history', label: 'Historical', icon: History },
+                { val: 'architecture', label: 'Architecture', icon: Network },
+                { val: 'impact', label: 'Impact Model', icon: Trophy },
+              ].map(t => {
+                const Icon = t.icon;
+                return (
+                  <TabsTrigger key={t.val} value={t.val}
+                    className="text-xs data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 flex items-center gap-1.5 px-3 py-1.5">
+                    <Icon className="w-3.5 h-3.5" />{t.label}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Water Level Chart */}
-                <Card className="lg:col-span-3 bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Droplets className="w-5 h-5 text-cyan-400" />
-                      Water Level Monitoring
-                    </CardTitle>
-                    <CardDescription className="text-slate-400">
-                      {selectedSensorData ? selectedSensorData.name : 'All monitoring stations'}
-                    </CardDescription>
+            {/* OVERVIEW */}
+            <TabsContent value="overview" className="mt-4 space-y-4">
+              {/* Top: Chart + Agent */}
+              <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                <Card className="xl:col-span-3 bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-white text-sm flex items-center gap-2">
+                        <Droplets className="w-4 h-4 text-cyan-400" />
+                        Water Level & Rainfall — {selectedSensorData?.name ?? 'All Stations'}
+                      </CardTitle>
+                      <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-700">Real-time · Open-Meteo</Badge>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[350px]">
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={timeSeriesData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                          <XAxis 
-                            dataKey="timestamp" 
-                            tickFormatter={(value) => format(new Date(value), 'HH:mm')}
-                            stroke="#64748b"
-                          />
-                          <YAxis stroke="#64748b" />
-                          <RechartsTooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
-                            labelStyle={{ color: '#94a3b8' }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="waterLevel" 
-                            stroke="#06b6d4" 
-                            fill="#06b6d4" 
-                            fillOpacity={0.3}
-                            name="Water Level (m)"
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="rainfall" 
-                            stroke="#3b82f6" 
-                            strokeDasharray="5 5"
-                            name="Rainfall (mm)"
-                          />
+                          <defs>
+                            <linearGradient id="wlGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
+                              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                          <XAxis dataKey="timestamp" tickFormatter={v => format(new Date(v), 'HH:mm')} stroke="#475569" tick={{ fontSize: 10 }} />
+                          <YAxis stroke="#475569" tick={{ fontSize: 10 }} />
+                          <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 11 }} labelStyle={{ color: '#94a3b8' }} />
+                          <Area type="monotone" dataKey="waterLevel" stroke="#06b6d4" fill="url(#wlGrad)" strokeWidth={2} name="Water Level (m)" />
+                          <Line type="monotone" dataKey="rainfall" stroke="#3b82f6" strokeDasharray="5 3" strokeWidth={1.5} dot={false} name="Rainfall (mm)" />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* AI Agent Panel */}
-                <div className="lg:col-span-1">
-                  <AgentPanel />
+                <div className="xl:col-span-1">
+                  <AgentPanel logs={agentLogs} isLoading={isLoading} onRefresh={refresh} />
                 </div>
               </div>
 
-              {/* Status & Weather Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-1 bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-emerald-400" />
-                      Current Status
+              {/* Bottom: Status + Radar + Weather */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Sensor Status List */}
+                <Card className="bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-white flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-400" /> Sensor Status
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[280px]">
-                      <div className="space-y-3">
-                        {filteredWaterData.map((data) => {
-                          const sensor = sensorLocations.find(s => s.id === data.sensorId);
-                          const percent = Math.min(100, (data.currentLevel / data.dangerLevel) * 100);
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[260px] px-4">
+                      <div className="space-y-2 pb-4">
+                        {(filteredWater.length > 0 ? filteredWater : waterLevels).map(w => {
+                          const loc = sensorLocations.find(s => s.id === w.sensorId);
+                          const pct = Math.min(100, (w.currentLevel / w.dangerLevel) * 100);
                           return (
-                            <div key={data.sensorId} className="p-3 bg-slate-800/50 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-white">{sensor?.name}</span>
-                                <div className="flex items-center gap-2">
-                                  {getTrendIcon(data.trend)}
-                                  {getStatusIcon(data.status)}
+                            <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-medium text-white truncate max-w-[120px]">{loc?.name}</span>
+                                <div className="flex items-center gap-1.5">
+                                  {getTrendIcon(w.trend)}
+                                  {getStatusIcon(w.status)}
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                                <span>{data.currentLevel.toFixed(1)}m</span>
-                                <span>Danger: {data.dangerLevel}m</span>
+                              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                                <span>{w.currentLevel.toFixed(1)}m</span>
+                                <span>limit {w.dangerLevel}m</span>
                               </div>
-                              <Progress 
-                                value={percent} 
-                                className="h-2"
+                              <Progress value={pct}
+                                className={`h-1.5 bg-slate-700 ${w.status === 'danger' ? '[&>[role=progressbar]]:bg-red-500' : w.status === 'warning' ? '[&>[role=progressbar]]:bg-amber-500' : '[&>[role=progressbar]]:bg-emerald-500'}`}
                               />
                             </div>
                           );
@@ -508,94 +351,103 @@ export default function App() {
                   </CardContent>
                 </Card>
 
-                {/* Weather Data */}
-                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredWeatherData.slice(0, selectedSensor === 'all' ? 4 : 1).map((weather) => {
-                    const sensor = sensorLocations.find(s => s.id === weather.sensorId);
-                    return (
-                      <Card key={weather.sensorId} className="bg-slate-900/50 border-slate-800">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm text-slate-400">{sensor?.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center gap-2">
-                              <Thermometer className="w-4 h-4 text-orange-400" />
-                              <span className="text-white">{weather.temperature.toFixed(1)}°C</span>
+                {/* Radar Chart */}
+                <Card className="bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-white flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-violet-400" /> System Risk Radar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center h-[260px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="#334155" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
+                        <Radar name="Risk" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.25} strokeWidth={1.5} />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Weather Cards */}
+                <Card className="bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-white flex items-center gap-2">
+                      <CloudRain className="w-4 h-4 text-blue-400" /> Weather Telemetry
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[260px] px-4">
+                      <div className="space-y-2 pb-4">
+                        {(filteredWeather.length > 0 ? filteredWeather : weatherData).slice(0, 6).map(w => {
+                          const loc = sensorLocations.find(s => s.id === w.sensorId);
+                          return (
+                            <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                              <p className="text-[10px] font-semibold text-slate-300 mb-1.5">{loc?.name}</p>
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                {[
+                                  { icon: Thermometer, val: `${w.temperature.toFixed(1)}°C`, color: 'text-orange-400' },
+                                  { icon: Droplets, val: `${w.humidity.toFixed(0)}%`, color: 'text-blue-400' },
+                                  { icon: CloudRain, val: `${w.rainfall.toFixed(1)} mm`, color: 'text-cyan-400' },
+                                  { icon: Wind, val: `${w.windSpeed.toFixed(0)} km/h`, color: 'text-emerald-400' },
+                                ].map(({ icon: Ic, val, color }) => (
+                                  <div key={val} className="flex items-center gap-1">
+                                    <Ic className={`w-2.5 h-2.5 ${color}`} />
+                                    <span className="text-[10px] text-slate-400">{val}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Droplets className="w-4 h-4 text-blue-400" />
-                              <span className="text-white">{weather.humidity}%</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CloudRain className="w-4 h-4 text-cyan-400" />
-                              <span className="text-white">{weather.rainfall.toFixed(1)}mm</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Wind className="w-4 h-4 text-emerald-400" />
-                              <span className="text-white">{weather.windSpeed.toFixed(1)}km/h</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
-            {/* Map Tab */}
-            <TabsContent value="map">
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Navigation className="w-5 h-5 text-cyan-400" />
-                    Live Flood Risk Map
-                  </CardTitle>
+            {/* MAP */}
+            <TabsContent value="map" className="mt-4">
+              <Card className="bg-slate-900/60 border-slate-800">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <Navigation className="w-4 h-4 text-cyan-400" /> Live Flood Risk Map — India
+                    </CardTitle>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Safe</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Warning</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Danger</span>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-[500px] rounded-lg overflow-hidden">
-                    <MapContainer 
-                      center={[22.5937, 78.9629] as LatLngExpression} 
-                      zoom={5} 
-                      style={{ height: '100%', width: '100%' }}
-                    >
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      {sensorLocations.map((sensor) => {
-                        const waterData = waterLevelData.find(w => w.sensorId === sensor.id);
-                        const icon = waterData?.status === 'danger' ? dangerIcon : 
-                                     waterData?.status === 'warning' ? warningIcon : safeIcon;
-                        const color = waterData?.status === 'danger' ? '#ef4444' : 
-                                      waterData?.status === 'warning' ? '#f97316' : '#10a981';
-                        
+                <CardContent className="p-2">
+                  <div className="h-[520px] rounded-xl overflow-hidden border border-slate-700">
+                    <MapContainer center={[22.5937, 78.9629] as LatLngExpression} zoom={5} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution="&copy; CartoDB" />
+                      {sensorLocations.map(sensor => {
+                        const w = waterLevels.find(wl => wl.sensorId === sensor.id);
+                        const icon = w?.status === 'danger' ? dangerIcon : w?.status === 'warning' ? warningIcon : safeIcon;
+                        const color = w?.status === 'danger' ? '#ef4444' : w?.status === 'warning' ? '#f97316' : '#10a981';
                         return (
                           <Marker key={sensor.id} position={[sensor.lat, sensor.lng] as LatLngExpression} icon={icon}>
                             <Popup>
-                              <div className="p-2">
-                                <h3 className="font-bold">{sensor.name}</h3>
-                                <p className="text-sm">{sensor.river} River</p>
-                                <p className="text-sm">{sensor.district}, {sensor.state}</p>
-                                {waterData && (
-                                  <div className="mt-2">
-                                    <p className="text-sm">Water Level: {waterData.currentLevel}m</p>
-                                    <p className="text-sm">Status: <span className={`font-semibold`} style={{ color }}>
-                                      {waterData.status.toUpperCase()}
-                                    </span></p>
+                              <div className="p-1 min-w-[160px]">
+                                <p className="font-bold text-sm">{sensor.name}</p>
+                                <p className="text-xs text-gray-600">{sensor.river} · {sensor.district}, {sensor.state}</p>
+                                {w && (
+                                  <div className="mt-2 space-y-1 text-xs">
+                                    <p>Level: <strong>{w.currentLevel.toFixed(1)}m</strong> / {w.dangerLevel}m</p>
+                                    <p>Status: <strong style={{ color }}>{w.status.toUpperCase()}</strong></p>
+                                    <p>Trend: {w.trend}</p>
                                   </div>
                                 )}
                               </div>
                             </Popup>
-                            <Circle 
-                              center={[sensor.lat, sensor.lng] as LatLngExpression}
-                              radius={waterData?.status === 'danger' ? 30000 : waterData?.status === 'warning' ? 20000 : 10000}
-                              pathOptions={{ 
-                                fillColor: color, 
-                                fillOpacity: 0.2, 
-                                color: color,
-                                weight: 2 
-                              }}
+                            <Circle center={[sensor.lat, sensor.lng] as LatLngExpression}
+                              radius={w?.status === 'danger' ? 40000 : w?.status === 'warning' ? 25000 : 12000}
+                              pathOptions={{ fillColor: color, fillOpacity: 0.12, color, weight: 1.5, opacity: 0.4 }}
                             />
                           </Marker>
                         );
@@ -606,60 +458,51 @@ export default function App() {
               </Card>
             </TabsContent>
 
-            {/* Analytics Tab */}
-            <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">24-Hour Forecast</CardTitle>
+            {/* ANALYTICS */}
+            <TabsContent value="analytics" className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card className="bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-white">24-Hour AI Flood Forecast</CardTitle>
+                    <CardDescription className="text-slate-500 text-xs">Open-Meteo Flood API · {selectedSensorData?.name ?? 'S001'}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={forecastData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                          <XAxis 
-                            dataKey="timestamp" 
-                            tickFormatter={(value) => format(new Date(value), 'HH:mm')}
-                            stroke="#64748b"
-                          />
-                          <YAxis stroke="#64748b" />
-                          <RechartsTooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="waterLevel" 
-                            stroke="#8b5cf6" 
-                            fill="#8b5cf6" 
-                            fillOpacity={0.3}
-                            name="Predicted Level"
-                          />
+                          <defs>
+                            <linearGradient id="fGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                          <XAxis dataKey="timestamp" tickFormatter={v => format(new Date(v), 'HH:mm')} stroke="#475569" tick={{ fontSize: 10 }} />
+                          <YAxis stroke="#475569" tick={{ fontSize: 10 }} />
+                          <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', fontSize: 11 }} />
+                          <Area type="monotone" dataKey="waterLevel" stroke="#8b5cf6" fill="url(#fGrad)" strokeWidth={2} name="Predicted Level (m)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900/50 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Rainfall Distribution</CardTitle>
+                <Card className="bg-slate-900/60 border-slate-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-white">Rainfall Distribution by Station</CardTitle>
+                    <CardDescription className="text-slate-500 text-xs">IMD / Open-Meteo · mm/hr</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={weatherData.slice(0, 8)}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                          <XAxis 
-                            dataKey="sensorId" 
-                            tickFormatter={(value) => sensorLocations.find(s => s.id === value)?.name.split(' ')[0] || value}
-                            stroke="#64748b"
-                          />
-                          <YAxis stroke="#64748b" />
-                          <RechartsTooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
-                          />
-                          <Bar dataKey="rainfall24h" fill="#3b82f6" name="24h Rainfall (mm)" />
+                        <BarChart data={weatherData.slice(0, 8)} barSize={18}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                          <XAxis dataKey="sensorId"
+                            tickFormatter={v => sensorLocations.find(s => s.id === v)?.name.split(' ')[0] ?? v}
+                            stroke="#475569" tick={{ fontSize: 9 }} />
+                          <YAxis stroke="#475569" tick={{ fontSize: 10 }} />
+                          <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', fontSize: 11 }} />
+                          <Bar dataKey="rainfall" fill="#3b82f6" name="Rainfall (mm/hr)" radius={[3, 3, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -668,82 +511,61 @@ export default function App() {
               </div>
             </TabsContent>
 
-            {/* Alerts Tab */}
-            <TabsContent value="alerts">
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-red-400" />
-                    Active Alerts
+            {/* ALERTS */}
+            <TabsContent value="alerts" className="mt-4">
+              <Card className="bg-slate-900/60 border-slate-800">
+                <CardHeader className="pb-3 flex-row items-center justify-between">
+                  <CardTitle className="text-white text-sm flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-red-400" /> Active Alert Feed
+                    {stats.active > 0 && <Badge className="bg-red-500 text-white text-[10px] py-0">{stats.active} new</Badge>}
                   </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
-                      <Filter className="w-4 h-4 mr-2" />
-                      Filter
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="border-slate-700 text-slate-400 h-7 px-2 text-xs">
+                      <Filter className="w-3 h-3 mr-1" /> Filter
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-slate-600 text-slate-300"
-                      onClick={downloadCSV}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Export
+                    <Button size="sm" variant="outline" className="border-slate-700 text-slate-400 h-7 px-2 text-xs" onClick={downloadCSV}>
+                      <Download className="w-3 h-3 mr-1" /> Export
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[500px]">
-                    <div className="space-y-3">
-                      {filteredAlerts.map((alert) => (
-                        <div 
-                          key={alert.id} 
-                          className={`p-4 rounded-lg border ${getSeverityColor(alert.severity)} ${!alert.isRead ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-blue-500/50' : ''}`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <AlertTriangle className="w-4 h-4" />
-                                <span className="font-semibold">{alert.locationName}</span>
-                                <Badge variant="outline" className="text-xs capitalize">
+                    <div className="space-y-2.5">
+                      {filteredAlerts.length === 0 && (
+                        <div className="py-16 text-center text-slate-500">
+                          <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-500/40" />
+                          <p className="text-sm">All clear — no active alerts</p>
+                        </div>
+                      )}
+                      {filteredAlerts.map(alert => (
+                        <div key={alert.id}
+                          className={`p-4 rounded-xl border ${getSeverityColor(alert.severity)} ${!alert.isRead ? 'ring-1 ring-inset ring-blue-500/30' : 'opacity-80'}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                <span className="font-semibold text-sm">{alert.locationName}</span>
+                                <Badge variant="outline" className="text-[9px] capitalize border-current">
                                   {alert.type.replace('_', ' ')}
                                 </Badge>
-                                {!alert.isRead && (
-                                  <Badge className="bg-blue-500 text-white text-xs">New</Badge>
-                                )}
+                                {!alert.isRead && <Badge className="bg-blue-600 text-white text-[9px] border-0">NEW</Badge>}
                               </div>
-                              <p className="text-sm opacity-90 mb-2">{alert.message}</p>
-                              <div className="flex items-center gap-4 text-xs opacity-70">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {format(new Date(alert.timestamp), 'MMM dd, HH:mm')}
-                                </span>
+                              <p className="text-xs opacity-90 mb-2 leading-relaxed">{alert.message}</p>
+                              <div className="flex items-center gap-4 text-[10px] opacity-60">
+                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{format(new Date(alert.timestamp), 'MMM d, HH:mm')}</span>
                                 {alert.affectedPopulation && (
-                                  <span className="flex items-center gap-1">
-                                    <Users className="w-3 h-3" />
-                                    {alert.affectedPopulation.toLocaleString()} affected
-                                  </span>
+                                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{alert.affectedPopulation.toLocaleString()} at risk</span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 ml-4">
+                            <div className="flex gap-1 shrink-0">
                               {!alert.isRead && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => markAlertAsRead(alert.id)}
-                                >
-                                  <CheckCircle2 className="w-4 h-4" />
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => markRead(alert.id)}>
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => dismissAlert(alert.id)}
-                              >
-                                <XCircle className="w-4 h-4" />
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => dismiss(alert.id)}>
+                                <XCircle className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -755,110 +577,90 @@ export default function App() {
               </Card>
             </TabsContent>
 
-            {/* Predictions Tab */}
-            <TabsContent value="predictions">
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-violet-400" />
-                    AI Flood Predictions
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Machine learning models analyzing weather patterns and water levels
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {filteredPredictions.map((prediction, idx) => (
-                      <div key={idx} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                        <div className="flex items-start justify-between">
+            {/* AI PREDICTIONS */}
+            <TabsContent value="predictions" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-3">
+                  {filteredPredictions.length === 0 && predictions.length === 0 && (
+                    <Card className="bg-slate-900/60 border-slate-800">
+                      <CardContent className="py-16 text-center text-slate-500">
+                        <Brain className="w-8 h-8 mx-auto mb-2 animate-pulse text-violet-500/40" />
+                        <p className="text-sm">Fetching AI predictions from flood models…</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {(filteredPredictions.length > 0 ? filteredPredictions : predictions).map((p, i) => (
+                    <Card key={i} className="bg-slate-900/60 border-slate-800 hover:border-slate-700 transition-all">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h4 className="text-lg font-semibold text-white">{prediction.locationName}</h4>
-                            <p className="text-sm text-slate-400">
-                              Prediction for {format(new Date(prediction.predictionTime), 'MMM dd, HH:mm')}
+                            <h4 className="font-semibold text-white">{p.locationName}</h4>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              Forecast: {format(new Date(p.predictionTime), 'MMM d, HH:mm')}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className={`text-2xl font-bold ${getRiskColor(prediction.riskLevel)}`}>
-                              {prediction.confidence}%
-                            </p>
-                            <p className="text-xs text-slate-400">Confidence</p>
+                          <div className="text-right shrink-0">
+                            <p className={`text-2xl font-bold ${getRiskColor(p.riskLevel)}`}>{p.confidence.toFixed(0)}%</p>
+                            <p className="text-[10px] text-slate-500">Confidence</p>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                          <div className="text-center p-3 bg-slate-900/50 rounded">
-                            <p className="text-lg font-semibold text-cyan-400">
-                              {prediction.predictedLevel.toFixed(1)}m
-                            </p>
-                            <p className="text-xs text-slate-400">Predicted Level</p>
-                          </div>
-                          <div className="text-center p-3 bg-slate-900/50 rounded">
-                            <p className={`text-lg font-semibold ${getRiskColor(prediction.riskLevel)}`}>
-                              {prediction.riskLevel.toUpperCase()}
-                            </p>
-                            <p className="text-xs text-slate-400">Risk Level</p>
-                          </div>
-                          <div className="text-center p-3 bg-slate-900/50 rounded">
-                            <p className="text-lg font-semibold text-amber-400">
-                              {prediction.timeToFlood}h
-                            </p>
-                            <p className="text-xs text-slate-400">Time to Flood</p>
-                          </div>
+                        <div className="grid grid-cols-3 gap-3 mt-3">
+                          {[
+                            { label: 'Predicted Level', val: `${p.predictedLevel.toFixed(1)}m`, color: 'text-cyan-400' },
+                            { label: 'Risk Level', val: p.riskLevel.toUpperCase(), color: getRiskColor(p.riskLevel) },
+                            { label: 'Time to Flood', val: p.timeToFlood ? `${p.timeToFlood}h` : 'N/A', color: 'text-amber-400' },
+                          ].map(m => (
+                            <div key={m.label} className="text-center p-2.5 bg-slate-800/50 rounded-lg">
+                              <p className={`text-base font-bold ${m.color}`}>{m.val}</p>
+                              <p className="text-[9px] text-slate-500 mt-0.5">{m.label}</p>
+                            </div>
+                          ))}
                         </div>
-                        
-                        <div className="mt-4 p-3 bg-violet-500/10 border border-violet-500/20 rounded">
-                          <p className="text-sm text-violet-300">
-                            <span className="font-semibold">AI Recommendation:</span> {prediction.recommendation}
-                          </p>
+                        <div className="mt-3 p-2.5 bg-violet-900/20 border border-violet-500/15 rounded-lg flex items-start gap-2">
+                          <Brain className="w-3.5 h-3.5 text-violet-400 shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-violet-300 leading-relaxed">{p.recommendation}</p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <div>
+                  <AgentPanel logs={agentLogs} isLoading={isLoading} onRefresh={refresh} />
+                </div>
+              </div>
             </TabsContent>
 
-            {/* History Tab */}
-            <TabsContent value="history">
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <History className="w-5 h-5 text-amber-400" />
-                    Historical Flood Events
+            {/* HISTORY */}
+            <TabsContent value="history" className="mt-4">
+              <Card className="bg-slate-900/60 border-slate-800">
+                <CardHeader className="pb-3 flex-row items-center justify-between">
+                  <CardTitle className="text-white text-sm flex items-center gap-2">
+                    <History className="w-4 h-4 text-amber-400" /> Historical Flood Events
                   </CardTitle>
-                  <Button 
-                    variant="outline" 
-                    className="border-slate-600 text-slate-300"
-                    onClick={downloadCSV}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Data
+                  <Button size="sm" variant="outline" className="border-slate-700 text-slate-400 h-7 px-2 text-xs" onClick={downloadCSV}>
+                    <Download className="w-3 h-3 mr-1" /> Export
                   </Button>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-slate-700">
-                        <TableHead className="text-slate-400">Date</TableHead>
-                        <TableHead className="text-slate-400">Location</TableHead>
-                        <TableHead className="text-slate-400">Max Level</TableHead>
-                        <TableHead className="text-slate-400">Rainfall</TableHead>
-                        <TableHead className="text-slate-400">Duration</TableHead>
-                        <TableHead className="text-slate-400">Evacuated</TableHead>
-                        <TableHead className="text-slate-400">Damage</TableHead>
+                      <TableRow className="border-slate-800">
+                        {['Date', 'Location', 'Peak Level', 'Rainfall', 'Duration (h)', 'Casualties', 'Evacuated', 'Damage (₹Cr)'].map(h => (
+                          <TableHead key={h} className="text-slate-400 text-xs">{h}</TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {historicalEvents.map((event) => (
-                        <TableRow key={event.id} className="border-slate-700">
-                          <TableCell className="text-white">{format(new Date(event.date), 'MMM dd, yyyy')}</TableCell>
-                          <TableCell className="text-white">{event.location}</TableCell>
-                          <TableCell className="text-cyan-400">{event.maxWaterLevel}m</TableCell>
-                          <TableCell className="text-blue-400">{event.rainfall}mm</TableCell>
-                          <TableCell className="text-white">{event.duration}h</TableCell>
-                          <TableCell className="text-amber-400">{event.evacuationCount.toLocaleString()}</TableCell>
-                          <TableCell className="text-red-400">₹{(event.damageEstimate / 1000000).toFixed(0)}M</TableCell>
+                      {historicalEvents.map(ev => (
+                        <TableRow key={ev.id} className="border-slate-800/50 hover:bg-slate-800/30">
+                          <TableCell className="text-slate-300 text-xs">{ev.date}</TableCell>
+                          <TableCell className="text-white text-xs font-medium">{ev.location}</TableCell>
+                          <TableCell className="text-cyan-400 text-xs">{ev.maxWaterLevel}m</TableCell>
+                          <TableCell className="text-blue-400 text-xs">{ev.rainfall} mm</TableCell>
+                          <TableCell className="text-slate-300 text-xs">{ev.duration}h</TableCell>
+                          <TableCell className="text-red-400 text-xs">{ev.casualties}</TableCell>
+                          <TableCell className="text-amber-400 text-xs">{ev.evacuationCount.toLocaleString()}</TableCell>
+                          <TableCell className="text-orange-400 text-xs">₹{(ev.damageEstimate / 1e7).toFixed(0)} Cr</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -866,108 +668,51 @@ export default function App() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* ARCHITECTURE */}
+            <TabsContent value="architecture" className="mt-4">
+              <ArchitecturePage />
+            </TabsContent>
+
+            {/* IMPACT MODEL */}
+            <TabsContent value="impact" className="mt-4">
+              <ImpactModelPage />
+            </TabsContent>
           </Tabs>
         </main>
 
-        {/* Report Dialog */}
+        {/* ── Report Dialog ── */}
         <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-          <DialogContent className="bg-slate-800 border-slate-700 max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="text-white">Generate Report</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <FileDown className="w-5 h-5 text-cyan-400" /> Generate Situation Report
+              </DialogTitle>
               <DialogDescription className="text-slate-400">
-                Preview and download the flood monitoring report
+                Export a PDF or CSV snapshot of the current flood situation.
               </DialogDescription>
             </DialogHeader>
-            
-            <div ref={reportRef} className="bg-white text-slate-900 p-8 rounded-lg">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">FloodGuard AI</h1>
-                <p className="text-lg text-slate-600">Flood Monitoring Report</p>
-                <p className="text-sm text-slate-500">{format(new Date(), 'MMMM dd, yyyy HH:mm')}</p>
-              </div>
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-4">Executive Summary</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-100 rounded">
-                    <p className="text-sm text-slate-600">Total Sensors</p>
-                    <p className="text-2xl font-bold">{dashboardStats.totalSensors}</p>
-                  </div>
-                  <div className="p-4 bg-slate-100 rounded">
-                    <p className="text-sm text-slate-600">Active Alerts</p>
-                    <p className="text-2xl font-bold">{alerts.filter(a => !a.isRead).length}</p>
-                  </div>
-                  <div className="p-4 bg-slate-100 rounded">
-                    <p className="text-sm text-slate-600">Sensors in Warning</p>
-                    <p className="text-2xl font-bold">{dashboardStats.sensorsInWarning}</p>
-                  </div>
-                  <div className="p-4 bg-slate-100 rounded">
-                    <p className="text-sm text-slate-600">Sensors in Danger</p>
-                    <p className="text-2xl font-bold">{dashboardStats.sensorsInDanger}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-4">Current Water Levels</h2>
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th className="p-2 text-left">Location</th>
-                      <th className="p-2 text-left">Current Level</th>
-                      <th className="p-2 text-left">Danger Level</th>
-                      <th className="p-2 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {waterLevelData.map((w) => {
-                      const sensor = sensorLocations.find(s => s.id === w.sensorId);
-                      return (
-                        <tr key={w.sensorId} className="border-b">
-                          <td className="p-2">{sensor?.name}</td>
-                          <td className="p-2">{w.currentLevel}m</td>
-                          <td className="p-2">{w.dangerLevel}m</td>
-                          <td className="p-2 capitalize">{w.status}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-4">Active Alerts</h2>
-                {alerts.filter(a => !a.isRead).map((alert) => (
-                  <div key={alert.id} className="p-4 bg-red-50 border border-red-200 rounded mb-2">
-                    <p className="font-semibold">{alert.locationName}</p>
-                    <p className="text-sm">{alert.message}</p>
-                    <p className="text-xs text-slate-500">
-                      {format(new Date(alert.timestamp), 'MMM dd, HH:mm')}
-                    </p>
+            <div ref={reportRef} className="space-y-4 py-4">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Active Sensors', val: stats.total, color: 'text-cyan-400' },
+                  { label: 'Critical Alerts', val: stats.danger, color: 'text-red-400' },
+                  { label: 'Predictions', val: predictions.length, color: 'text-violet-400' },
+                ].map(m => (
+                  <div key={m.label} className="text-center p-3 bg-slate-800 rounded-lg">
+                    <p className={`text-2xl font-bold ${m.color}`}>{m.val}</p>
+                    <p className="text-xs text-slate-400">{m.label}</p>
                   </div>
                 ))}
               </div>
-              
-              <div>
-                <h2 className="text-xl font-bold mb-4">AI Predictions</h2>
-                {aiPredictions.map((pred, idx) => (
-                  <div key={idx} className="p-4 bg-violet-50 border border-violet-200 rounded mb-2">
-                    <p className="font-semibold">{pred.locationName}</p>
-                    <p className="text-sm">Risk Level: {pred.riskLevel.toUpperCase()}</p>
-                    <p className="text-sm">Confidence: {pred.confidence}%</p>
-                    <p className="text-sm">{pred.recommendation}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs text-slate-500 text-center">Generated: {format(new Date(), 'PPpp')}</p>
             </div>
-            
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setShowReportDialog(false)}>
-                Cancel
+            <div className="flex gap-3 pt-2">
+              <Button onClick={generatePDF} className="flex-1 bg-cyan-600 hover:bg-cyan-500">
+                <FileDown className="w-4 h-4 mr-2" /> Download PDF
               </Button>
-              <Button onClick={generatePDF} className="bg-blue-600 hover:bg-blue-700">
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
+              <Button variant="outline" onClick={downloadCSV} className="flex-1 border-slate-700 text-slate-300">
+                <Download className="w-4 h-4 mr-2" /> Export CSV
               </Button>
             </div>
           </DialogContent>
