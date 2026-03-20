@@ -1,51 +1,109 @@
-# 🌊 FloodGuard AI - ET AI Hackathon 2026
+# 🌊 FloodGuard AI — ET AI Hackathon 2026
 
-**FloodGuard AI** is an advanced, domain-specific AI Agent platform designed for real-time flood monitoring, prediction, and autonomous disaster response. Built for the **ET AI Hackathon 2026** (Problem Statement 5: Domain-Specialized AI Agents).
-
-## 🚀 Key Features
-
-- **Real-Time Data Sync**: Integrated with **Open-Meteo Weather & Flood APIs** for live telemetry from across India.
-- **Agentic AI Command Center**: An autonomous AI agent that analyzes sensor data, reasons through complex scenarios (Chain of Thought), and executes emergency response protocols without human intervention.
-- **Predictive Analytics**: Machine learning models that forecast water levels and flood risks 7 days in advance.
-- **Interactive Map**: Live leaflet-based risk mapping with real-time severity indicators.
-- **Compliance Guardrails**: Ensuring all autonomous actions adhere to regional safety and legal protocols.
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript, Vite
-- **Styling**: Tailwind CSS, Shadcn/UI
-- **Charts**: Recharts
-- **Mapping**: React-Leaflet (OpenStreetMap)
-- **Data**: Open-Meteo (Real-time Weather & Flood APIs)
-- **Icons**: Lucide-React
-
-## 📦 Setup & Installation
-
-1.  **Clone the Repository**:
-    ```bash
-    git clone [repository-url]
-    cd FloodGuard-AI-Platform/app
-    ```
-
-2.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-
-3.  **Run Development Server**:
-    ```bash
-    npm run dev
-    ```
-
-4.  **Environment Variables**:
-    *Currently using free Open-Meteo APIs (no key required).* To add OpenWeatherMap or other services, create a `.env` file from `.env.example`.
-
-## 🏆 Hackathon Alignment
-
-This project specifically addresses **Problem Statement 5: Domain-Specialized AI Agents with Compliance Guardrails**. It demonstrates:
-- **Full Task Completion**: From sensor monitoring to autonomous decision-making.
-- **Multi-modal Inputs**: Weather patterns + River discharge levels.
-- **Auditability**: Every AI decision is logged with clear reasoning and guardrail verification.
+> **Problem Statement 5**: Domain-Specialized AI Agents with Compliance Guardrails  
+> *Agriculture/Disaster Management Domain*  
+> Live Demo: [https://live-flood.netlify.app](https://live-flood.netlify.app)
 
 ---
-*Created for ET AI Hackathon 2026*
+
+## 🚀 What It Does
+
+FloodGuard AI is an **autonomous, multi-agent flood intelligence platform** for India. It continuously monitors 12 major river basins with live sensor data, runs AI-powered flood risk analysis using LLaMA 3.3 70B, and executes emergency response actions — all within NDMA compliance guardrails.
+
+### Key Capabilities
+| Feature | Details |
+|---------|---------|
+| **Real-Time Telemetry** | Open-Meteo Weather + Flood APIs, 60s polling across 12 Indian stations |
+| **AI Risk Analysis** | Groq (LLaMA 3.3 70B) Chain-of-Thought reasoning per sensor |
+| **Autonomous Actions** | NDRF pre-alerts, evacuation advisories, dam gate scheduling |
+| **Compliance Guardrails** | Every action verified against NDMA §4.2, CWC §12, State DM Act §30 |
+| **Full Auditability** | Timestamped agent log with full CoT trace per decision |
+| **Predictive Forecasting** | 7-day flood risk forecast from Open-Meteo Flood API |
+
+---
+
+## 🛠️ Quick Start
+
+```bash
+git clone https://github.com/kriss2012/FloodGuard-AI-Platform
+cd FloodGuard-AI-Platform/app
+npm install
+cp .env.example .env          # Add Groq key for real AI (optional)
+npm run dev                    # → http://localhost:5173
+```
+
+**Zero required API keys** — Open-Meteo is free, no authentication needed.  
+Add your free [Groq API key](https://console.groq.com) to `.env` for real LLM reasoning.
+
+---
+
+## 📐 Architecture
+
+See [ARCHITECTURE.md](../ARCHITECTURE.md) for the full 2-page architecture document covering:
+- Agent roles (Sensor, Hazard, Guardrail, Action, Orchestrator)
+- Communication protocol and data flow diagram
+- Error handling and audit trail schema
+- Compliance guardrail specifications
+
+**Quick Summary:**
+```
+Open-Meteo APIs → Sensor Agent → Hazard Agent (LLaMA 3.3)
+                                      ↓
+                              Guardrail Agent (NDMA rules)
+                                      ↓
+                               Action Agent (NDRF/Alerts)
+                                      ↓
+                                 Audit Logger
+```
+
+---
+
+## 📊 Impact Model
+
+See [IMPACT_MODEL.md](../IMPACT_MODEL.md) for the full quantified business case.
+
+**Bottom line:**
+- ₹290–600 Cr/year in flood damage prevention (12 districts)
+- 190+ lives/year from improved early warning
+- 93% faster alert generation (4h → 15min)
+- ₹0/month infrastructure cost (all free-tier APIs)
+
+---
+
+## 🗂️ Submission Requirements
+
+| Item | Status | Link |
+|------|--------|------|
+| GitHub Repository | ✅ Public | This repo |
+| Architecture Document | ✅ Complete | [ARCHITECTURE.md](../ARCHITECTURE.md) |
+| Impact Model | ✅ Quantified | [IMPACT_MODEL.md](../IMPACT_MODEL.md) |
+| 3-Min Pitch Video | 🎬 Record demo from live site | [live-flood.netlify.app](https://live-flood.netlify.app) |
+| Working Demo | ✅ Live | [live-flood.netlify.app](https://live-flood.netlify.app) |
+
+---
+
+## 📦 Tech Stack
+
+- **Frontend**: React 19, TypeScript, Vite 7
+- **UI**: Tailwind CSS + Shadcn/UI, Lucide icons
+- **Charts**: Recharts (area, bar, radar)
+- **Map**: React-Leaflet with CartoDB Dark tiles
+- **AI**: Groq API — LLaMA 3.3 70B (free tier)
+- **Data**: Open-Meteo Weather + Flood APIs (completely free)
+- **Export**: jsPDF + html2canvas, native CSV
+
+---
+
+## 🏆 Hackathon Alignment (PS #5)
+
+| Criterion | How We Address It |
+|-----------|-------------------|
+| **Domain expertise depth** | Hydrology-aware thresholds, NDMA/CWC protocol integration |
+| **Compliance & guardrails** | 3-layer policy check before every autonomous action |
+| **Edge-case handling** | API fallback engine, false-positive detection, low-confidence hold |
+| **Full task completion** | End-to-end: detect → analyze → decide → act → audit |
+| **Auditability** | Full CoT log visible in UI + JSON audit trail per decision |
+
+---
+
+*Built with ❤️ for ET AI Hackathon 2026*
