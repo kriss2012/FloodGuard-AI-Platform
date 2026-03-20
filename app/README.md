@@ -2,7 +2,7 @@
 
 > **Problem Statement 5**: Domain-Specialized AI Agents with Compliance Guardrails  
 > *Agriculture/Disaster Management Domain*  
-> Live Demo: [https://live-flood.netlify.app](https://live-flood.netlify.app)
+> Live Demo: [https://floodlive.netlify.app](https://floodlive.netlify.app)
 
 ---
 
@@ -77,8 +77,8 @@ See [IMPACT_MODEL.md](../IMPACT_MODEL.md) for the full quantified business case.
 | GitHub Repository | ✅ Public | This repo |
 | Architecture Document | ✅ Complete | [ARCHITECTURE.md](../ARCHITECTURE.md) |
 | Impact Model | ✅ Quantified | [IMPACT_MODEL.md](../IMPACT_MODEL.md) |
-| 3-Min Pitch Video | 🎬 Record demo from live site | [live-flood.netlify.app](https://live-flood.netlify.app) |
-| Working Demo | ✅ Live | [live-flood.netlify.app](https://live-flood.netlify.app) |
+| 3-Min Pitch Video | 🎬 Record demo from live site | [floodlive.netlify.app](https://floodlive.netlify.app) |
+| Working Demo | ✅ Live | [floodlive.netlify.app](https://floodlive.netlify.app) |
 
 ---
 
