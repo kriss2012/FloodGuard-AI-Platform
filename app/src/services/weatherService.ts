@@ -35,7 +35,7 @@ export async function getRealTimeWeather(sensorId: string, lat: number, lng: num
   };
 }
 
-export async function getWeatherHistory(sensorId: string, lat: number, lng: number): Promise<TimeSeriesData[]> {
+export async function getWeatherHistory(lat: number, lng: number): Promise<TimeSeriesData[]> {
   const url = `${WEATHER_API_BASE}/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,precipitation&past_days=1&forecast_days=0`;
   
   const data = await fetchJson<OpenMeteoResponse>(url);
