@@ -4,7 +4,7 @@ import {
   MapPin, Droplets, CloudRain, Wind, Thermometer, AlertTriangle, Bell, History,
   FileDown, Activity, Users, Clock, TrendingUp, TrendingDown, Minus, Filter,
   Download, CheckCircle2, XCircle, Brain, Gauge, Waves, Navigation, RefreshCw,
-  Network, BarChart3, Trophy, Shield, Cpu, Zap, Radio
+  Network, BarChart3, Trophy, Shield, Cpu, Zap, Radio, Terminal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -35,6 +35,7 @@ import { useRealTimeData } from '@/hooks/useRealTimeData';
 import { AgentPanel } from '@/components/AgentPanel';
 import { ArchitecturePage } from '@/components/ArchitecturePage';
 import { ImpactModelPage } from '@/components/ImpactModelPage';
+import { CommandCenterPage } from '@/components/CommandCenterPage';
 
 // Map icons
 const makeIcon = (color: string) => new Icon({
@@ -279,7 +280,8 @@ export default function App() {
           <Tabs defaultValue="overview">
             <TabsList className="bg-slate-950/20 border border-white/5 flex-wrap h-auto gap-1 p-1 backdrop-blur-md rounded-xl">
               {[
-                { val: 'overview', label: 'Command Center', icon: Activity },
+                { val: 'overview', label: 'Dashboard', icon: Activity },
+                { val: 'command', label: 'Command Center', icon: Terminal },
                 { val: 'map', label: 'Tactical Map', icon: Navigation },
                 { val: 'analytics', label: 'AI Analytics', icon: BarChart3 },
                 { val: 'alerts', label: `Alert Feed (${stats.active})`, icon: Bell },
@@ -443,6 +445,15 @@ export default function App() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="command" className="mt-4 focus-visible:outline-none">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <CommandCenterPage />
+              </motion.div>
             </TabsContent>
 
             {/* MAP */}
