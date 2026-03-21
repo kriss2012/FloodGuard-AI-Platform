@@ -163,6 +163,34 @@ export function useRealTimeData() {
     return () => clearInterval(interval);
   }, [syncData]);
 
+  const simulateEvent = useCallback((type: string) => {
+    setIsLoading(true);
+    addLog('alert', `[SYSTEM] MANUAL EMERGENCY OVERRIDE: ${type.toUpperCase()}...`, 'System');
+    
+    setTimeout(() => {
+      if (type === 'flash_flood') {
+        const floodAlert: FloodAlert = {
+          id: `sim-${Date.now()}`,
+          sensorId: 'S001',
+          locationName: 'Simulated Basin NW',
+          severity: 'critical',
+          type: 'water_level',
+          message: 'SIMULATED: Rapid ascent detected (6.2m). Triggering autonomous protocols.',
+          timestamp: new Date().toISOString(),
+          isRead: false,
+          affectedPopulation: 12500
+        };
+        setAlerts(prev => [floodAlert, ...prev]);
+        toast.error("SIMULATION ALERT: Critical Flash Flood Detected", {
+          description: "Agents are taking autonomous mitigation actions."
+        });
+      }
+      setIsLoading(false);
+      setLastUpdated(new Date());
+      addLog('success', `SYSTEM: ${type.toUpperCase()} SIMULATION DEPLOYED.`, 'System');
+    }, 2000);
+  }, [addLog]);
+
   return {
     waterLevels,
     weatherData,
@@ -173,5 +201,6 @@ export function useRealTimeData() {
     lastUpdated,
     refresh: syncData,
     setAlerts,
+    simulateEvent,
   };
 }
