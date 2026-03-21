@@ -65,7 +65,7 @@ const getRiskColor = (r: string) => ({
 
 export default function App() {
   const [selectedSensor, setSelectedSensor] = useState<string>('all');
-  const { waterLevels, weatherData, predictions, alerts, agentLogs, isLoading, lastUpdated, refresh, setAlerts } = useRealTimeData();
+  const { waterLevels, weatherData, predictions, alerts, agentLogs, isLoading, lastUpdated, refresh, setAlerts, simulateEvent } = useRealTimeData();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
