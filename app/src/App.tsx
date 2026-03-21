@@ -452,7 +452,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <CommandCenterPage />
+                <CommandCenterPage onSimulate={simulateEvent} />
               </motion.div>
             </TabsContent>
 
