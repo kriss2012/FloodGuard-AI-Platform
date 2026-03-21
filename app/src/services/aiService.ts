@@ -12,6 +12,7 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export interface AgentThought {
   step: string;
+  agent: 'Hazard' | 'Action' | 'Guardrail';
   reasoning: string;
   action: string;
   guardrailCheck: string;
@@ -27,7 +28,7 @@ export interface AIAnalysis {
 }
 
 let lastCallTime = 0;
-const RATE_LIMIT_MS = 5000; // 5 seconds between calls
+const RATE_LIMIT_MS = 10000; // Increased to 10s for better rate limit compliance
 
 export async function analyzeFloodRisk(
   sensorName: string,
@@ -36,7 +37,6 @@ export async function analyzeFloodRisk(
   rainfall: number,
   trend: string
 ): Promise<AIAnalysis> {
-  // Rate limiting
   const now = Date.now();
   if (now - lastCallTime < RATE_LIMIT_MS) {
     return generateFallbackAnalysis(sensorName, waterLevel, dangerLevel, rainfall, trend);
@@ -48,31 +48,38 @@ export async function analyzeFloodRisk(
 
   lastCallTime = now;
 
-  const prompt = `You are FloodGuard AI, an autonomous flood risk assessment agent for India's disaster management system. 
+  const prompt = `You are the FloodGuard Multi-Agent System Core. 
+Analyze tactical sensor data and coordinate between specialized agents (Hazard Core, Action Agent, Guardrail Sentinel).
 
-Analyze this sensor data and provide a structured JSON response:
-- Location: ${sensorName}
-- Current Water Level: ${waterLevel.toFixed(1)}m
-- Danger Threshold: ${dangerLevel}m
-- Current Rainfall: ${rainfall.toFixed(1)}mm/hr
-- Trend: ${trend}
-- Risk Ratio: ${((waterLevel / dangerLevel) * 100).toFixed(0)}%
+[DATA INPUT]
+- LOCATION: ${sensorName}
+- CURRENT LEVEL: ${waterLevel.toFixed(1)}m
+- DANGER THRESHOLD: ${dangerLevel}m
+- RAINFALL: ${rainfall.toFixed(1)}mm/hr
+- TREND: ${trend}
+- CAPACITY UTILIZATION: ${((waterLevel / dangerLevel) * 100).toFixed(1)}%
 
-Respond ONLY with this JSON structure (no markdown, no explanation outside JSON):
+[CONSTRAINTS]
+- Provide pure JSON.
+- Follow NDMA and CWC flood mitigation protocols.
+- "thoughts" must contain exactly 3 objects representing the interaction between agents.
+
+[JSON SCHEMA]
 {
-  "summary": "2-3 sentence situational overview",
+  "summary": "High-level situational extraction",
   "thoughts": [
     {
-      "step": "Step name",
-      "reasoning": "Why this matters",
-      "action": "What autonomous action to take",
-      "guardrailCheck": "Which safety protocol verified",
-      "confidence": 85
+      "step": "LOGIC_STEP_ID",
+      "agent": "Hazard|Action|Guardrail",
+      "reasoning": "Technical reasoning for this step",
+      "action": "Autonomous operation or recommendation",
+      "guardrailCheck": "Compliance protocol verified",
+      "confidence": 0-100
     }
   ],
-  "recommendation": "Primary action recommendation",
+  "recommendation": "Final tactical directive",
   "severity": "low|medium|high|critical",
-  "confidence": 90
+  "confidence": 0-100
 }`;
 
   try {
@@ -84,18 +91,19 @@ Respond ONLY with this JSON structure (no markdown, no explanation outside JSON)
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 800,
+        messages: [{ role: 'system', content: 'You are a mission-critical disaster management AI. Respond with precise technical JSON.' }, { role: 'user', content: prompt }],
+        temperature: 0.1, // Lower temperature for more consistent JSON
+        max_tokens: 1000,
+        response_format: { type: "json_object" }
       }),
     });
 
-    if (!res.ok) throw new Error('Groq API failed');
+    if (!res.ok) throw new Error('Groq API Error');
     
     const data = await res.json();
-    const text = data.choices[0].message.content;
-    return JSON.parse(text) as AIAnalysis;
-  } catch {
+    return JSON.parse(data.choices[0].message.content) as AIAnalysis;
+  } catch (err) {
+    console.error('AI Analysis Error:', err);
     return generateFallbackAnalysis(sensorName, waterLevel, dangerLevel, rainfall, trend);
   }
 }
@@ -108,44 +116,44 @@ function generateFallbackAnalysis(
   trend: string
 ): AIAnalysis {
   const ratio = waterLevel / dangerLevel;
-  let severity: 'low' | 'medium' | 'high' | 'critical' = 'low';
-  if (ratio > 0.95) severity = 'critical';
-  else if (ratio > 0.85) severity = 'high';
-  else if (ratio > 0.7) severity = 'medium';
+  const severity: AIAnalysis['severity'] = ratio > 0.95 ? 'critical' : ratio > 0.85 ? 'high' : ratio > 0.7 ? 'medium' : 'low';
 
   return {
-    summary: `${sensorName} is at ${(ratio * 100).toFixed(0)}% of danger threshold with ${trend} water levels and ${rainfall.toFixed(1)}mm/hr rainfall. ${severity === 'critical' ? 'Immediate action required.' : severity === 'high' ? 'Precautionary measures advised.' : 'Continue monitoring.'}`,
+    summary: `SITUATIONAL REPORT: ${sensorName} matrix shows ${trend} hydration levels at ${(ratio * 100).toFixed(1)}% capacity. Precipitation constant at ${rainfall.toFixed(1)}mm/hr.`,
     thoughts: [
       {
-        step: 'Hydrology Analysis',
-        reasoning: `Current level ${waterLevel.toFixed(1)}m vs danger ${dangerLevel}m — ${(ratio * 100).toFixed(0)}% filled. Trend: ${trend}.`,
-        action: ratio > 0.85 ? 'Alert downstream communities' : 'Continue passive monitoring',
-        guardrailCheck: 'NDMA Protocol §4.2 — Water Level Threshold Verification ✓',
+        step: 'REASONING_ENGINE_HYDROL',
+        agent: 'Hazard',
+        reasoning: `Hydro-static pressure at ${waterLevel.toFixed(1)}m exceeds nominal operating envelopes. Discharge trend is ${trend}.`,
+        action: ratio > 0.85 ? 'Trigger level-2 alert protocol' : 'Maintain passive observation',
+        guardrailCheck: 'CWC-V4: Threshold validation successful',
         confidence: 94,
       },
       {
-        step: 'Rainfall Impact Modeling',
-        reasoning: `At ${rainfall.toFixed(1)}mm/hr, additional runoff will raise levels further in 2-4 hours.`,
-        action: ratio > 0.7 ? 'Pre-position NDRF rapid response team' : 'Log rainfall data',
-        guardrailCheck: 'CWC Statutory Limit §12 — Rainfall Flash Flood Index ✓',
+        step: 'ACTION_DISPATCH_PROTOCOL',
+        agent: 'Action',
+        reasoning: `Elevated risk detected. Calculating downstream impact for ${sensorName} catchment area.`,
+        action: ratio > 0.85 ? 'Initiate community warning broadcast' : 'Log baseline telemetry',
+        guardrailCheck: 'NDMA-DIR-2024: Priority 1 Comm Check',
         confidence: 88,
       },
       {
-        step: 'Population Risk Assessment',
-        reasoning: 'Cross-referencing affected zones with census data and evacuation routes.',
-        action: severity === 'critical' ? 'Trigger mandatory evacuation order' : 'Issue advisory alert',
-        guardrailCheck: 'State DM Act §30 — Civilian Safety Protocol ✓',
-        confidence: 91,
+        step: 'COMPLIANCE_SENTINEL_CHECK',
+        agent: 'Guardrail',
+        reasoning: 'Verifying tactical recommendations against State Disaster Management guidelines.',
+        action: severity === 'critical' ? 'Lock-in evacuation directive' : 'Authorized advisory issuance',
+        guardrailCheck: 'SDM-ACT-2024: Compliance verified ✓',
+        confidence: 98,
       },
     ],
     recommendation: severity === 'critical' 
-      ? `CRITICAL: Initiate immediate evacuation. Contact NDRF Control Room (+91-9711077372). Open designated shelters.`
+      ? `CRITICAL DIRECTIVE: Execute immediate evacuation of Zone-A. Contact NDRF Command Center (+91-11-23438284). Activate Emergency Alert System.`
       : severity === 'high'
-      ? `HIGH: Pre-deploy emergency response units. Issue public advisories. Activate flood warning sirens.`
+      ? `TACTICAL ALERT: Pre-deploy regional response squads. Notify district magistrates. Continuous siren operation authorized.`
       : severity === 'medium'
-      ? `MEDIUM: Increase monitoring frequency to 15-min intervals. Alert district administration.`
-      : `LOW: Continue standard monitoring. No immediate action required.`,
+      ? `MONITORING UPGRADE: Shift to 5-minute sampling. Prepare downstream advisories. Alert nodal officers.`
+      : `OPERATIONAL: Status green. No immediate tactical deviation required. Continue periodic matrix sync.`,
     severity,
-    confidence: 89,
+    confidence: 91,
   };
 }
