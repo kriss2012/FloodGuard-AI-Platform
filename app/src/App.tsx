@@ -4,7 +4,7 @@ import {
   MapPin, Droplets, CloudRain, Wind, Thermometer, AlertTriangle, Bell, History,
   FileDown, Activity, Users, Clock, TrendingUp, TrendingDown, Minus, Filter,
   Download, CheckCircle2, XCircle, Brain, Gauge, Waves, Navigation, RefreshCw,
-  Network, BarChart3, Trophy, Shield, Cpu, Zap, Radio, Terminal
+  Network, BarChart3, Trophy, Shield, Zap, Radio, Terminal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -65,7 +65,11 @@ const getRiskColor = (r: string) => ({
 
 export default function App() {
   const [selectedSensor, setSelectedSensor] = useState<string>('all');
-  const { waterLevels, weatherData, predictions, alerts, agentLogs, isLoading, lastUpdated, refresh, setAlerts, simulateEvent } = useRealTimeData();
+  const { 
+    waterLevels, weatherData, predictions, alerts, agentLogs, 
+    isLoading, lastUpdated, refresh, setAlerts, simulateEvent,
+    isSimulationActive, simulationType 
+  } = useRealTimeData();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -121,13 +125,16 @@ export default function App() {
   const generatePDF = async () => {
     if (!reportRef.current) return;
     try {
+      const locName = isSimulationActive ? (simulationType === 'flash_flood' ? 'Pune' : 'Simulated') : 'Global';
       const canvas = await html2canvas(reportRef.current);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210, pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
-      pdf.save(`FloodGuard-Report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
-      toast.success('Report downloaded!');
+      pdf.save(`EcoTwin-Lite-Report-${locName}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+      toast.success('TACTICAL ABSTRACT ARCHIVED', {
+        description: `Secure situational report saved for ${locName} sector.`
+      });
       setShowReportDialog(false);
     } catch { toast.error('PDF generation failed'); }
   };
@@ -171,20 +178,23 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                    FloodGuard AI
+                    EcoTwin Lite
                   </h1>
                   <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 text-[10px] py-0 px-2 font-bold tracking-wider uppercase">
-                    v2.0 PRO
+                    v3.0 GENAI
+                  </Badge>
+                  <Badge className="bg-white/5 text-slate-400 border border-white/10 text-[9px] py-0 px-2 font-bold tracking-wider uppercase ml-1">
+                    Team ECHOGEAR
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-1">
-                    <Cpu className="w-3 h-3 text-slate-500" />
-                    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">LLaMA 3.3 70B</span>
+                    <Brain className="w-3 h-3 text-cyan-400" />
+                    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">Climate Risk Copilot</span>
                   </div>
                   <span className="text-slate-700">•</span>
-                  <p className="text-[10px] text-slate-500 font-medium">
-                    {isLoading ? 'SYNCING AGENTS...' : `NETWORK STABLE • ${format(lastUpdated, 'HH:mm:ss')}`}
+                  <p className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                    {isLoading ? 'ANALYZING RISK...' : `FROM REACTIVE → PROACTIVE • ${format(lastUpdated, 'HH:mm:ss')}`}
                   </p>
                 </div>
               </div>
@@ -274,15 +284,15 @@ export default function App() {
           <Tabs defaultValue="overview">
             <TabsList className="bg-slate-950/20 border border-white/5 flex-wrap h-auto gap-1 p-1 backdrop-blur-md rounded-xl">
               {[
-                { val: 'overview', label: 'Dashboard', icon: Activity },
-                { val: 'command', label: 'Command Center', icon: Terminal },
+                { val: 'overview', label: 'Climate Deck', icon: Activity },
+                { val: 'command', label: 'EcoTwin Copilot', icon: Terminal },
                 { val: 'map', label: 'Tactical Map', icon: Navigation },
                 { val: 'analytics', label: 'AI Analytics', icon: BarChart3 },
                 { val: 'alerts', label: `Alert Feed (${stats.active})`, icon: Bell },
-                { val: 'predictions', label: 'Risk Models', icon: Brain },
+                { val: 'roadmap', label: 'Strategic Roadmap', icon: Radio },
                 { val: 'history', label: 'Archives', icon: History },
-                { val: 'architecture', label: 'System Ops', icon: Network },
-                { val: 'impact', label: 'Escalation', icon: Trophy },
+                { val: 'architecture', label: 'Agent Core', icon: Network },
+                { val: 'impact', label: 'Impact Model', icon: Trophy },
               ].map(t => {
                 const Icon = t.icon;
                 return (
@@ -296,12 +306,12 @@ export default function App() {
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="mt-4 space-y-4 focus-visible:outline-none">
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="grid grid-cols-1 xl:grid-cols-4 gap-4"
-                >
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
                   <Card className="xl:col-span-3 glass-panel border-white/5 overflow-hidden">
                     <CardHeader className="pb-2 border-b border-white/5">
                       <div className="flex items-center justify-between">
@@ -343,102 +353,121 @@ export default function App() {
                   <div className="xl:col-span-1 border border-white/5 rounded-xl bg-slate-950/20 backdrop-blur-md overflow-hidden">
                     <AgentPanel logs={agentLogs} isLoading={isLoading} onRefresh={refresh} />
                   </div>
-                </motion.div>
-              </AnimatePresence>
+                </div>
 
-              {/* Bottom: Status + Radar + Weather */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Sensor Status List */}
-                <Card className="bg-slate-900/60 border-slate-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-white flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-emerald-400" /> Sensor Status
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[260px] px-4">
-                      <div className="space-y-2 pb-4">
-                        {(filteredWater.length > 0 ? filteredWater : waterLevels).map(w => {
-                          const loc = sensorLocations.find(s => s.id === w.sensorId);
-                          const pct = Math.min(100, (w.currentLevel / w.dangerLevel) * 100);
-                          return (
-                            <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-medium text-white truncate max-w-[120px]">{loc?.name}</span>
-                                <div className="flex items-center gap-1.5">
-                                  {getTrendIcon(w.trend)}
-                                  {getStatusIcon(w.status)}
+                {/* Bottom: Status + Radar + Weather */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Sensor Status List */}
+                  <Card className="bg-slate-900/60 border-slate-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-white flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-400" /> Sensor Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[260px] px-4">
+                        <div className="space-y-2 pb-4">
+                          {(filteredWater.length > 0 ? filteredWater : waterLevels).map(w => {
+                            const loc = sensorLocations.find(s => s.id === w.sensorId);
+                            const pct = Math.min(100, (w.currentLevel / w.dangerLevel) * 100);
+                            return (
+                              <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-xs font-medium text-white truncate max-w-[120px]">{loc?.name}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    {getTrendIcon(w.trend)}
+                                    {getStatusIcon(w.status)}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                                  <span>{w.currentLevel.toFixed(1)}m</span>
+                                  <span>limit {w.dangerLevel}m</span>
+                                </div>
+                                <Progress value={pct}
+                                  className={`h-1.5 bg-slate-700 ${w.status === 'danger' ? '[&>[role=progressbar]]:bg-red-500' : w.status === 'warning' ? '[&>[role=progressbar]]:bg-amber-500' : '[&>[role=progressbar]]:bg-emerald-500'}`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+
+                  {/* Radar Chart */}
+                  <Card className="bg-slate-900/60 border-slate-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-white flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-violet-400" /> System Risk Radar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center h-[260px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid stroke="#334155" />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
+                          <Radar name="Risk" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.25} strokeWidth={1.5} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Weather Cards */}
+                  <Card className="bg-slate-900/60 border-slate-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-white flex items-center gap-2">
+                        <CloudRain className="w-4 h-4 text-blue-400" /> Weather Telemetry
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[260px] px-4">
+                        <div className="space-y-2 pb-4">
+                          {(filteredWeather.length > 0 ? filteredWeather : weatherData).slice(0, 6).map(w => {
+                            const loc = sensorLocations.find(s => s.id === w.sensorId);
+                            return (
+                              <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
+                                <p className="text-[10px] font-semibold text-slate-300 mb-1.5">{loc?.name}</p>
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                  {[
+                                    { icon: Thermometer, val: `${w.temperature.toFixed(1)}°C`, color: 'text-orange-400' },
+                                    { icon: Droplets, val: `${w.humidity.toFixed(0)}%`, color: 'text-blue-400' },
+                                    { icon: CloudRain, val: `${w.rainfall.toFixed(1)} mm`, color: 'text-cyan-400' },
+                                    { icon: Wind, val: `${w.windSpeed.toFixed(0)} km/h`, color: 'text-emerald-400' },
+                                  ].map(({ icon: Ic, val, color }) => (
+                                    <div key={val} className="flex items-center gap-1">
+                                      <Ic className={`w-2.5 h-2.5 ${color}`} />
+                                      <span className="text-[10px] text-slate-400">{val}</span>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                                <span>{w.currentLevel.toFixed(1)}m</span>
-                                <span>limit {w.dangerLevel}m</span>
-                              </div>
-                              <Progress value={pct}
-                                className={`h-1.5 bg-slate-700 ${w.status === 'danger' ? '[&>[role=progressbar]]:bg-red-500' : w.status === 'warning' ? '[&>[role=progressbar]]:bg-amber-500' : '[&>[role=progressbar]]:bg-emerald-500'}`}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                {/* Radar Chart */}
-                <Card className="bg-slate-900/60 border-slate-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-white flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-violet-400" /> System Risk Radar
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-center h-[260px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="#334155" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
-                        <Radar name="Risk" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.25} strokeWidth={1.5} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Weather Cards */}
-                <Card className="bg-slate-900/60 border-slate-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-white flex items-center gap-2">
-                      <CloudRain className="w-4 h-4 text-blue-400" /> Weather Telemetry
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[260px] px-4">
-                      <div className="space-y-2 pb-4">
-                        {(filteredWeather.length > 0 ? filteredWeather : weatherData).slice(0, 6).map(w => {
-                          const loc = sensorLocations.find(s => s.id === w.sensorId);
-                          return (
-                            <div key={w.sensorId} className="p-2.5 bg-slate-800/40 rounded-lg border border-slate-700/30">
-                              <p className="text-[10px] font-semibold text-slate-300 mb-1.5">{loc?.name}</p>
-                              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                {[
-                                  { icon: Thermometer, val: `${w.temperature.toFixed(1)}°C`, color: 'text-orange-400' },
-                                  { icon: Droplets, val: `${w.humidity.toFixed(0)}%`, color: 'text-blue-400' },
-                                  { icon: CloudRain, val: `${w.rainfall.toFixed(1)} mm`, color: 'text-cyan-400' },
-                                  { icon: Wind, val: `${w.windSpeed.toFixed(0)} km/h`, color: 'text-emerald-400' },
-                                ].map(({ icon: Ic, val, color }) => (
-                                  <div key={val} className="flex items-center gap-1">
-                                    <Ic className={`w-2.5 h-2.5 ${color}`} />
-                                    <span className="text-[10px] text-slate-400">{val}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
+                {/* Data Sources Footer */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { label: 'OpenStreetMap', desc: 'Geospatial Data (OSM)', icon: MapPin },
+                    { label: 'NOAA / Copernicus', desc: 'Climate Data & Forecasts', icon: CloudRain },
+                    { label: 'Synthetic IoT', desc: 'Real-time Nodal Telemetry', icon: Radio },
+                  ].map(d => (
+                    <div key={d.label} className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl flex items-center gap-3">
+                      <div className="p-2 bg-slate-800 rounded-lg">
+                        <d.icon className="w-4 h-4 text-cyan-400" />
                       </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
+                      <div>
+                        <p className="text-[10px] font-black text-white uppercase tracking-tight">{d.label}</p>
+                        <p className="text-[10px] text-slate-500 font-bold">{d.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="command" className="mt-4 focus-visible:outline-none">
@@ -477,31 +506,53 @@ export default function App() {
                           const w = waterLevels.find(wl => wl.sensorId === sensor.id);
                           const icon = w?.status === 'danger' ? dangerIcon : w?.status === 'warning' ? warningIcon : safeIcon;
                           const color = w?.status === 'danger' ? '#ef4444' : w?.status === 'warning' ? '#f97316' : '#10a981';
+                          
+                          // Simulation Overlays
+                          const isSimTarget = isSimulationActive && sensor.id === 'S001';
+                          const simColor = simulationType === 'flash_flood' ? '#ef4444' : '#f97316';
+                          
                           return (
-                            <Marker key={sensor.id} position={[sensor.lat, sensor.lng] as LatLngExpression} icon={icon}>
-                              <Popup className="premium-popup">
-                                <div className="p-2 min-w-[200px] bg-slate-900 text-white rounded-lg">
-                                  <p className="font-black text-sm tracking-tight border-b border-white/10 pb-1 mb-1">{sensor.name}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">{sensor.river} · {sensor.district}</p>
-                                  {w && (
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
-                                        <span className="text-[10px] text-slate-400 uppercase">Level</span>
-                                        <strong className="text-sm font-black text-cyan-400">{w.currentLevel.toFixed(1)}m</strong>
+                            <div key={sensor.id}>
+                              <Marker position={[sensor.lat, sensor.lng] as LatLngExpression} icon={icon}>
+                                <Popup className="premium-popup">
+                                  <div className="p-2 min-w-[200px] bg-slate-900 text-white rounded-lg">
+                                    <p className="font-black text-sm tracking-tight border-b border-white/10 pb-1 mb-1">{sensor.name}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">{sensor.river} · {sensor.district}</p>
+                                    {w && (
+                                      <div className="space-y-2">
+                                        <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
+                                          <span className="text-[10px] text-slate-400 uppercase">Level</span>
+                                          <strong className="text-sm font-black text-cyan-400">{w.currentLevel.toFixed(1)}m</strong>
+                                        </div>
+                                        <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
+                                          <span className="text-[10px] text-slate-400 uppercase">Status</span>
+                                          <strong className="text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded border border-current" style={{ color }}>{w.status.toUpperCase()}</strong>
+                                        </div>
                                       </div>
-                                      <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
-                                        <span className="text-[10px] text-slate-400 uppercase">Status</span>
-                                        <strong className="text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded border border-current" style={{ color }}>{w.status.toUpperCase()}</strong>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </Popup>
-                              <Circle center={[sensor.lat, sensor.lng] as LatLngExpression}
-                                radius={w?.status === 'danger' ? 45000 : w?.status === 'warning' ? 30000 : 15000}
-                                pathOptions={{ fillColor: color, fillOpacity: 0.15, color, weight: 1.5, opacity: 0.5 }}
-                              />
-                            </Marker>
+                                    )}
+                                  </div>
+                                </Popup>
+                                <Circle center={[sensor.lat, sensor.lng] as LatLngExpression}
+                                  radius={w?.status === 'danger' ? 45000 : w?.status === 'warning' ? 30000 : 15000}
+                                  pathOptions={{ fillColor: color, fillOpacity: 0.15, color, weight: 1.5, opacity: 0.5 }}
+                                />
+                              </Marker>
+                              
+                              {isSimTarget && (
+                                <>
+                                  <Circle 
+                                    center={[sensor.lat, sensor.lng] as LatLngExpression}
+                                    radius={85000}
+                                    pathOptions={{ fillColor: simColor, fillOpacity: 0.05, color: simColor, weight: 1, dashArray: '5, 10' }}
+                                  />
+                                  <Circle 
+                                    center={[sensor.lat, sensor.lng] as LatLngExpression}
+                                    radius={120000}
+                                    pathOptions={{ fillColor: simColor, fillOpacity: 0.02, color: simColor, weight: 0.5, dashArray: '10, 20' }}
+                                  />
+                                </>
+                              )}
+                            </div>
                           );
                         })}
                       </MapContainer>
@@ -777,6 +828,69 @@ export default function App() {
               </motion.div>
             </TabsContent>
 
+            {/* ROADMAP */}
+            <TabsContent value="roadmap" className="mt-4 focus-visible:outline-none">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+              >
+                <Card className="lg:col-span-2 glass-panel border-white/5 overflow-hidden">
+                  <CardHeader className="bg-white/5 p-4 border-b border-white/5">
+                    <CardTitle className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-widest">
+                      <Radio className="w-4 h-4 text-cyan-400" /> Future Scaling Roadmap
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    {[
+                      { title: 'Real-time IoT Integration', desc: 'Migrating from synthetic matrix to live LoraWAN sensor nodes.', progress: 40, icon: Zap },
+                      { title: 'Multi-City Scalability', desc: 'Expanding tactical mesh to 5 Tier-1 cities across India.', progress: 12, icon: MapPin },
+                      { title: 'AI Predictive Alerts', desc: 'ML-based predictive broadcasting before hydrological events.', progress: 65, icon: Brain },
+                      { title: 'Government Integration', desc: 'Direct nodal handshake with NDMA and CWC data lakes.', progress: 25, icon: Shield },
+                    ].map(step => (
+                      <div key={step.title} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-slate-800 rounded-xl"><step.icon className="w-4 h-4 text-cyan-400" /></div>
+                            <div>
+                              <p className="text-xs font-black text-white uppercase tracking-tight">{step.title}</p>
+                              <p className="text-[10px] text-slate-500 font-bold">{step.desc}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px]">{step.progress}%</Badge>
+                        </div>
+                        <Progress value={step.progress} className="h-1 bg-white/5" indicatorClassName="bg-cyan-500" />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-panel border-white/5 overflow-hidden">
+                  <CardHeader className="bg-white/5 p-4 border-b border-white/5">
+                    <CardTitle className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-widest">
+                      <Activity className="w-4 h-4 text-emerald-400" /> Evaluation Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-8 text-center">
+                    {[
+                      { label: 'Decision Speed', val: '+87.5%', desc: 'Reduction in planning time' },
+                      { label: 'Model Precision', val: '92%', desc: 'Simulation accuracy' },
+                      { label: 'User Rating', val: '4.5/5', desc: 'Mission usefulness' },
+                    ].map(m => (
+                      <div key={m.label} className="space-y-2">
+                        <p className="text-4xl font-black text-white tracking-tighter">{m.val}</p>
+                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest leading-none">{m.label}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">{m.desc}</p>
+                      </div>
+                    ))}
+                    <div className="pt-6 border-t border-white/5 italic text-[10px] text-slate-400 font-bold">
+                      "EcoTwin Lite transforms cities from reactive to predictive."
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
             {/* IMPACT MODEL */}
             <TabsContent value="impact" className="mt-4 focus-visible:outline-none">
               <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
@@ -803,22 +917,75 @@ export default function App() {
               </DialogHeader>
             </div>
             
-            <div className="p-8 space-y-6">
+            <div className={`p-8 space-y-6 ${isSimulationActive ? 'bg-red-500/5' : ''}`}>
               <div ref={reportRef} className="space-y-6">
+                <div className="flex justify-between items-start border-b border-white/10 pb-4">
+                  <div>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">EcoTwin Lite Tactical Abstract</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Reference: ET-AI-2026-{format(new Date(), 'HHmm')}</p>
+                  </div>
+                  {isSimulationActive && (
+                    <Badge className="bg-red-500 text-white animate-pulse">SIMULATION ACTIVE: {simulationType?.toUpperCase()}</Badge>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: 'Active Assets', val: stats.total, color: 'text-cyan-400', bg: 'bg-cyan-500/5' },
-                    { label: 'Tactical Alerts', val: stats.danger, color: 'text-red-400', bg: 'bg-red-500/5' },
-                    { label: 'AI Simulations', val: predictions.length, color: 'text-violet-400', bg: 'bg-violet-500/5' },
+                    { label: 'Network Nodes', val: stats.total, color: 'text-cyan-400', bg: 'bg-cyan-500/5' },
+                    { label: 'Danger Zones', val: stats.danger, color: 'text-red-400', bg: 'bg-red-500/5' },
+                    { label: 'AI Risk Level', val: stats.danger > 0 ? 'CRITICAL' : 'OPTIMAL', color: stats.danger > 0 ? 'text-red-400' : 'text-emerald-400', bg: 'bg-white/5' },
                   ].map(m => (
                     <div key={m.label} className={`text-center p-4 ${m.bg} rounded-2xl border border-white/5`}>
-                      <p className={`text-3xl font-black tracking-tighter ${m.color}`}>{m.val}</p>
+                      <p className={`text-2xl font-black tracking-tighter ${m.color}`}>{m.val}</p>
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{m.label}</p>
                     </div>
                   ))}
                 </div>
-                
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Situational Intelligence Summary</h4>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <p className="text-xs text-slate-300 leading-relaxed italic">
+                      "EcoTwin AI has successfully retrieved relevant NDMA protocols for the current precipitation levels. 
+                      Hydrological weights for downstream sectors are being recalibrated. Recommended posture: {stats.danger > 0 ? 'High-Alert/Immediate Action' : 'Passive Surveillance'}."
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">GenAI Mitigation Checklist</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { item: 'Evacuation Zone 4 Clear', status: 'verified' },
+                      { item: 'Dam Spillway Check §12', status: 'pending' },
+                      { item: 'Nodal Handshake (Hazard/Action)', status: 'verified' },
+                      { item: 'Community SOS Broadcast', status: 'verified' },
+                    ].map(i => (
+                      <div key={i.item} className="flex items-center gap-2 p-2.5 bg-black/20 rounded-xl border border-white/5">
+                        <CheckCircle2 className={`w-3 h-3 ${i.status === 'verified' ? 'text-emerald-500' : 'text-slate-600'}`} />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{i.item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tactical Impact Estimation</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Decision Speed', val: '+87.5%', color: 'text-cyan-400' },
+                      { label: 'Resource Opt.', val: '40%', color: 'text-emerald-400' },
+                      { label: 'Risk Mitigation', val: '92%', color: 'text-amber-400' },
+                    ].map(m => (
+                      <div key={m.label} className="p-3 bg-white/5 rounded-xl border border-white/5 text-center">
+                        <p className={`text-xl font-black ${m.color}`}>{m.val}</p>
+                        <p className="text-[8px] font-bold text-slate-500 uppercase mt-1">{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/5 border border-white/5 mt-4">
                   <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 text-center">Security Hash & Clearance</h4>
                   <p className="text-[10px] font-mono text-slate-400 text-center break-all">SIG_{Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('')}</p>
                 </div>
