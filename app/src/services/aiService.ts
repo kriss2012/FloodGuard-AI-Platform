@@ -30,6 +30,8 @@ export interface AIAnalysis {
 let lastCallTime = 0;
 const RATE_LIMIT_MS = 10000; // Increased to 10s for better rate limit compliance
 
+import { getRelevantPolicies } from './knowledgeService';
+
 export async function analyzeFloodRisk(
   sensorName: string,
   waterLevel: number,
@@ -48,8 +50,14 @@ export async function analyzeFloodRisk(
 
   lastCallTime = now;
 
-  const prompt = `You are the FloodGuard Multi-Agent System Core. 
-Analyze tactical sensor data and coordinate between specialized agents (Hazard Core, Action Agent, Guardrail Sentinel).
+  const policies = getRelevantPolicies(`${sensorName} ${rainfall} ${waterLevel}`);
+  const policyContext = policies.map(p => `[${p.id}] ${p.content}`).join('\n');
+
+  const prompt = `You are the EcoTwin Lite - GenAI Climate Risk Copilot. 
+Analyze tactical sensor data and provide context-aware mitigation plans grounded in official disaster management policies.
+
+[GROUNDING POLICIES]
+${policyContext || 'Generic NDMA/CWC flood protocols apply.'}
 
 [DATA INPUT]
 - LOCATION: ${sensorName}
@@ -57,27 +65,28 @@ Analyze tactical sensor data and coordinate between specialized agents (Hazard C
 - DANGER THRESHOLD: ${dangerLevel}m
 - RAINFALL: ${rainfall.toFixed(1)}mm/hr
 - TREND: ${trend}
-- CAPACITY UTILIZATION: ${((waterLevel / dangerLevel) * 100).toFixed(1)}%
 
 [CONSTRAINTS]
 - Provide pure JSON.
-- Follow NDMA and CWC flood mitigation protocols.
-- "thoughts" must contain exactly 3 objects representing the interaction between agents.
+- If location is "Pune" and rainfall > 100mm, specifically mention high risk in neighborhoods like "Koregaon Park" and "Kalyani Nagar".
+- The "recommendation" field MUST be structured exactly as:
+  **Risk Assessment**: [Your detailed analysis]
+  **Mitigation Plan**: [Numbered list of actions: e.g. 1. Deploy teams, 2. Evacuate areas]
 
 [JSON SCHEMA]
 {
-  "summary": "High-level situational extraction",
+  "summary": "Situational summary including policy context",
   "thoughts": [
     {
       "step": "LOGIC_STEP_ID",
-      "agent": "Hazard|Action|Guardrail",
-      "reasoning": "Technical reasoning for this step",
+      "agent": "HazardCore|ActionAgent|GuardrailSentinel",
+      "reasoning": "Technical reasoning grounded in data and policy",
       "action": "Autonomous operation or recommendation",
       "guardrailCheck": "Compliance protocol verified",
       "confidence": 0-100
     }
   ],
-  "recommendation": "Final tactical directive",
+  "recommendation": "string (The structured Risk Assessment + Mitigation Plan)",
   "severity": "low|medium|high|critical",
   "confidence": 0-100
 }`;
@@ -91,8 +100,8 @@ Analyze tactical sensor data and coordinate between specialized agents (Hazard C
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'system', content: 'You are a mission-critical disaster management AI. Respond with precise technical JSON.' }, { role: 'user', content: prompt }],
-        temperature: 0.1, // Lower temperature for more consistent JSON
+        messages: [{ role: 'system', content: 'You are EcoTwin Lite, a mission-critical climate risk AI. Respond with precise technical JSON grounded in provided policies.' }, { role: 'user', content: prompt }],
+        temperature: 0.1,
         max_tokens: 1000,
         response_format: { type: "json_object" }
       }),
@@ -147,12 +156,12 @@ function generateFallbackAnalysis(
       },
     ],
     recommendation: severity === 'critical' 
-      ? `CRITICAL DIRECTIVE: Execute immediate evacuation of Zone-A. Contact NDRF Command Center (+91-11-23438284). Activate Emergency Alert System.`
+      ? `**Risk Assessment**: Critical flood event detected at ${sensorName}. Water level ${waterLevel.toFixed(1)}m exceeds safety margins by ${((ratio - 1) * 100).toFixed(1)}%.\n\n**Mitigation Plan**: 1. Execute immediate evacuation of Zone-A. 2. Contact NDRF Command Center (+91-11-23438284). 3. Activate Emergency Alert System.`
       : severity === 'high'
-      ? `TACTICAL ALERT: Pre-deploy regional response squads. Notify district magistrates. Continuous siren operation authorized.`
+      ? `**Risk Assessment**: High-risk hydrological anomaly detected. Current levels reaching ${(ratio * 100).toFixed(1)}% capacity.\n\n**Mitigation Plan**: 1. Pre-deploy regional response squads. 2. Notify district magistrates. 3. Continuous siren operation authorized.`
       : severity === 'medium'
-      ? `MONITORING UPGRADE: Shift to 5-minute sampling. Prepare downstream advisories. Alert nodal officers.`
-      : `OPERATIONAL: Status green. No immediate tactical deviation required. Continue periodic matrix sync.`,
+      ? `**Risk Assessment**: Elevated hydration detected. Monitoring sampling increased.\n\n**Mitigation Plan**: 1. Shift to 5-minute sampling. 2. Prepare downstream advisories. 3. Alert nodal officers.`
+      : `**Risk Assessment**: Status green. No immediate tactical deviation required.\n\n**Mitigation Plan**: 1. Maintain periodic matrix sync. 2. Continue passive monitoring.`,
     severity,
     confidence: 91,
   };
