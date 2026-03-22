@@ -163,32 +163,47 @@ export function useRealTimeData() {
     return () => clearInterval(interval);
   }, [syncData]);
 
-  const simulateEvent = useCallback((type: string) => {
+  const [isSimulationActive, setIsSimulationActive] = useState(false);
+  const [simulationType, setSimulationType] = useState<string | null>(null);
+
+  const simulateEvent = useCallback((type: string, params?: { rainfall?: number, location?: string }) => {
     setIsLoading(true);
-    addLog('alert', `[SYSTEM] MANUAL EMERGENCY OVERRIDE: ${type.toUpperCase()}...`, 'System');
+    setIsSimulationActive(true);
+    setSimulationType(type);
+    const rainfallDisp = params?.rainfall ? ` WITH ${params.rainfall}MM PRECIPITATION` : '';
+    const locName = params?.location || 'Simulated Basin NW';
+    addLog('alert', `[SYSTEM] MANUAL EMERGENCY OVERRIDE: ${type.toUpperCase()}${rainfallDisp} AT ${locName.toUpperCase()}...`, 'System');
     
     setTimeout(() => {
       if (type === 'flash_flood') {
+        const severity = (params?.rainfall || 0) > 100 ? 'critical' : 'high';
         const floodAlert: FloodAlert = {
           id: `sim-${Date.now()}`,
           sensorId: 'S001',
-          locationName: 'Simulated Basin NW',
-          severity: 'critical',
+          locationName: locName,
+          severity,
           type: 'water_level',
-          message: 'SIMULATED: Rapid ascent detected (6.2m). Triggering autonomous protocols.',
+          message: `SIMULATED: ${params?.rainfall ? `${params.rainfall}mm rainfall trigger detected.` : 'Rapid ascent (6.2m).'} Scaling defensive vectors.`,
           timestamp: new Date().toISOString(),
           isRead: false,
-          affectedPopulation: 12500
+          affectedPopulation: (params?.rainfall || 50) * 250
         };
         setAlerts(prev => [floodAlert, ...prev]);
-        toast.error("SIMULATION ALERT: Critical Flash Flood Detected", {
-          description: "Agents are taking autonomous mitigation actions."
+        toast.error(`SIMULATION ALERT: ${severity.toUpperCase()} Flash Flood Detected`, {
+          description: `Localized impact modeled for ${locName}.`
         });
       }
       setIsLoading(false);
       setLastUpdated(new Date());
       addLog('success', `SYSTEM: ${type.toUpperCase()} SIMULATION DEPLOYED.`, 'System');
     }, 2000);
+
+    // Auto-reset simulation after 60s
+    setTimeout(() => {
+      setIsSimulationActive(false);
+      setSimulationType(null);
+      addLog('success', 'SYSTEM: SIMULATION BUFFER CLEARED. RETURNING TO LIVE FEED.', 'System');
+    }, 60000);
   }, [addLog]);
 
   return {
@@ -197,6 +212,8 @@ export function useRealTimeData() {
     predictions,
     alerts,
     agentLogs,
+    isSimulationActive,
+    simulationType,
     isLoading,
     lastUpdated,
     refresh: syncData,
