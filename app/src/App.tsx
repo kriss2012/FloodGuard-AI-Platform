@@ -450,11 +450,12 @@ export default function App() {
                 </div>
 
                 {/* Data Sources Footer */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {[
                     { label: 'OpenStreetMap', desc: 'Geospatial Data (OSM)', icon: MapPin },
                     { label: 'NOAA / Copernicus', desc: 'Climate Data & Forecasts', icon: CloudRain },
                     { label: 'Synthetic IoT', desc: 'Real-time Nodal Telemetry', icon: Radio },
+                    { label: 'Disaster Guidelines', desc: 'RAG Context (NDMA/CWC)', icon: Shield },
                   ].map(d => (
                     <div key={d.label} className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl flex items-center gap-3">
                       <div className="p-2 bg-slate-800 rounded-lg">
@@ -475,7 +476,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <CommandCenterPage onSimulate={simulateEvent} />
+                <CommandCenterPage onSimulate={simulateEvent} agentLogs={agentLogs} />
               </motion.div>
             </TabsContent>
 
@@ -843,10 +844,10 @@ export default function App() {
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
                     {[
-                      { title: 'Real-time IoT Integration', desc: 'Migrating from synthetic matrix to live LoraWAN sensor nodes.', progress: 40, icon: Zap },
-                      { title: 'Multi-City Scalability', desc: 'Expanding tactical mesh to 5 Tier-1 cities across India.', progress: 12, icon: MapPin },
-                      { title: 'AI Predictive Alerts', desc: 'ML-based predictive broadcasting before hydrological events.', progress: 65, icon: Brain },
-                      { title: 'Government Integration', desc: 'Direct nodal handshake with NDMA and CWC data lakes.', progress: 25, icon: Shield },
+                      { title: 'Real-time IoT Integration', desc: 'Connect live sensor networks for instant data feeds.', progress: 40, icon: Zap },
+                      { title: 'Multi-City Scalability', desc: 'Deploy across 100+ Indian cities with localized models.', progress: 12, icon: MapPin },
+                      { title: 'AI Predictive Alerts', desc: 'Proactive warnings 24-48 hours before events.', progress: 65, icon: Brain },
+                      { title: 'Government Integration', desc: 'Direct API integration with NDMA and state disaster portals.', progress: 25, icon: Shield },
                     ].map(step => (
                       <div key={step.title} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5">
                         <div className="flex items-center justify-between">
