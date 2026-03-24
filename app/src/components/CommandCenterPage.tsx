@@ -10,6 +10,7 @@ import {
   MessageSquare,
   RefreshCw
 } from 'lucide-react';
+import type { AgentLog } from '@/hooks/useRealTimeData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,9 +25,10 @@ interface CommandCenterProps {
   onSimulate?: (type: string, params?: { rainfall?: number, location?: string }) => void;
   isAutoPilot?: boolean;
   onToggleAutoPilot?: (val: boolean) => void;
+  agentLogs?: AgentLog[];
 }
 
-export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAutoPilot }: CommandCenterProps) {
+export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAutoPilot, agentLogs = [] }: CommandCenterProps) {
   const [isLocked, setIsLocked] = useState(false);
   const [activeSim, setActiveSim] = useState<string | null>(null);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string; type?: 'simulation' | 'text' }[]>([
@@ -229,24 +231,33 @@ export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAuto
                 Thought Trace
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 h-[240px] overflow-y-auto bg-black/20 font-mono text-[9px] text-slate-500">
-              <div className="p-3 space-y-1.5">
-                <div className="flex gap-2">
-                  <span>[04:12:01]</span>
-                  <span className="text-emerald-500">HAZARD:</span>
-                  <span>Recalibrating hydrology weights...</span>
+            <CardContent className="p-0 h-[240px] overflow-hidden bg-black/20 font-mono text-[9px]">
+              <ScrollArea className="h-full">
+                <div className="p-3 space-y-1.5">
+                  {agentLogs.length === 0 ? (
+                    <div className="flex gap-2 text-slate-600">
+                      <span>[00:00:00]</span>
+                      <span className="text-slate-500 uppercase font-black">System:</span>
+                      <span>Waiting for nodal sync...</span>
+                    </div>
+                  ) : (
+                    agentLogs.map((log) => (
+                      <div key={log.id} className="flex gap-2 animate-in fade-in slide-in-from-left-1 duration-300">
+                        <span className="text-slate-600 shrink-0">[{log.timestamp}]</span>
+                        <span className={`font-black uppercase shrink-0 ${
+                          log.agent === 'Hazard' ? 'text-emerald-500' :
+                          log.agent === 'Action' ? 'text-cyan-500' :
+                          log.agent === 'Guardrail' ? 'text-violet-500' :
+                          log.agent === 'Sensor' ? 'text-blue-500' : 'text-slate-500'
+                        }`}>
+                          {log.agent || 'SYSTEM'}:
+                        </span>
+                        <span className="text-slate-400 break-words">{log.message}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <span>[04:12:05]</span>
-                  <span className="text-cyan-500">ACTION:</span>
-                  <span>handshake protocol verified.</span>
-                </div>
-                <div className="flex gap-2">
-                  <span>[04:12:08]</span>
-                  <span className="text-violet-500">GUARDRAIL:</span>
-                  <span>NDMA §4.2 Pass ✓</span>
-                </div>
-              </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
