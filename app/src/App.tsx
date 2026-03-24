@@ -4,7 +4,7 @@ import {
   MapPin, Droplets, CloudRain, Wind, Thermometer, AlertTriangle, Bell, History,
   FileDown, Activity, Users, Clock, TrendingUp, TrendingDown, Minus, Filter,
   Download, CheckCircle2, XCircle, Brain, Gauge, Waves, Navigation, RefreshCw,
-  Network, BarChart3, Trophy, Shield, Zap, Radio, Terminal
+  Network, BarChart3, Trophy, Shield, Zap, Radio, Terminal, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -36,6 +36,7 @@ import { AgentPanel } from '@/components/AgentPanel';
 import { ArchitecturePage } from '@/components/ArchitecturePage';
 import { ImpactModelPage } from '@/components/ImpactModelPage';
 import { CommandCenterPage } from '@/components/CommandCenterPage';
+import { PolicyLedgerPage } from '@/components/PolicyLedgerPage';
 
 // Map icons
 const makeIcon = (color: string) => new Icon({
@@ -292,6 +293,7 @@ export default function App() {
                 { val: 'roadmap', label: 'Strategic Roadmap', icon: Radio },
                 { val: 'history', label: 'Archives', icon: History },
                 { val: 'architecture', label: 'Agent Core', icon: Network },
+                { val: 'policy', label: 'Policy Ledger', icon: BookOpen },
                 { val: 'impact', label: 'Impact Model', icon: Trophy },
               ].map(t => {
                 const Icon = t.icon;
@@ -565,6 +567,17 @@ export default function App() {
                         <Button size="sm" variant="ghost" className="w-full justify-start text-[10px] h-7 font-bold text-slate-300 hover:text-cyan-400">
                           <CloudRain className="w-3 h-3 mr-2" /> PRECIPITATION
                         </Button>
+                        {isSimulationActive && (
+                          <div className="pt-2 mt-2 border-t border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Zap className="w-3 h-3 text-red-400 animate-pulse" />
+                              <span className="text-[9px] font-black text-white uppercase tracking-tighter">SIMULATION ACTIVE</span>
+                            </div>
+                            <Badge className="w-full bg-red-500/20 text-red-400 border-red-500/30 text-[8px] py-1 font-black tracking-widest uppercase">
+                              {simulationType?.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -889,6 +902,13 @@ export default function App() {
                     </div>
                   </CardContent>
                 </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* POLICY LEDGER */}
+            <TabsContent value="policy" className="mt-4 focus-visible:outline-none">
+              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+                <PolicyLedgerPage />
               </motion.div>
             </TabsContent>
 
