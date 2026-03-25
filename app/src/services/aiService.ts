@@ -53,7 +53,7 @@ export async function analyzeFloodRisk(
   const policies = getRelevantPolicies(`${sensorName} ${rainfall} ${waterLevel}`);
   const policyContext = policies.map(p => `[${p.id}] ${p.content}`).join('\n');
 
-  const prompt = `You are the EcoTwin Lite - GenAI Climate Risk Copilot. 
+  const prompt = `You are the FloodGuard AI - Autonomous Climate Risk Copilot. 
 Analyze tactical sensor data and provide context-aware mitigation plans grounded in official disaster management policies.
 
 [GROUNDING POLICIES]
@@ -100,7 +100,7 @@ ${policyContext || 'Generic NDMA/CWC flood protocols apply.'}
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'system', content: 'You are EcoTwin Lite, a mission-critical climate risk AI. Respond with precise technical JSON grounded in provided policies.' }, { role: 'user', content: prompt }],
+        messages: [{ role: 'system', content: 'You are FloodGuard AI, a mission-critical climate risk AI. Respond with precise technical JSON grounded in provided policies.' }, { role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 1000,
         response_format: { type: "json_object" }
