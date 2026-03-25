@@ -32,7 +32,7 @@ export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAuto
   const [isLocked, setIsLocked] = useState(false);
   const [activeSim, setActiveSim] = useState<string | null>(null);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string; type?: 'simulation' | 'text' }[]>([
-    { role: 'assistant', content: "Hello! I am EcoTwin Lite, your GenAI Climate Risk Copilot. How can I assist you today? You can try asking me to 'Simulate flood in Pune' or 'Check NDMA protocols for heavy rain'." }
+    { role: 'assistant', content: "Hello! I am FloodGuard AI, your Autonomous Climate Risk Co-pilot. How can I assist you today? You can try asking me to 'Simulate flood in Pune' or 'Check NDMA protocols for heavy rain'." }
   ]);
   const [input, setInput] = useState('');
 
@@ -101,8 +101,8 @@ export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAuto
         className="flex items-center justify-between"
       >
         <div>
-          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">EcoTwin Copilot</h2>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">GenAI Climate Risk Intelligence</p>
+          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">FloodGuard Copilot</h2>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Autonomous Climate Risk Intelligence</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 p-1.5 bg-black/40 rounded-xl border border-white/5">
@@ -140,9 +140,22 @@ export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAuto
           <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 p-4 relative">
               {activeSim && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-3">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-4">
                   <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin" />
-                  <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Recalibrating Knowledge Matrix...</p>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em]">Recalibrating Knowledge Matrix...</p>
+                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl max-w-[280px]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-[9px] font-black text-red-500 uppercase">Crisis Protocol §NDMA</span>
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-400 leading-tight">
+                        {activeSim === 'flash_flood' 
+                          ? "Executing Directive §4.2: Immediate evacuation of low-lying sectors mandatory." 
+                          : "Executing Directive §3.1: Thermal stress mitigation & cooling center activation."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
               <div className="space-y-4">
@@ -175,7 +188,7 @@ export function CommandCenterPage({ onSimulate, isAutoPilot = true, onToggleAuto
                 <input 
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask EcoTwin (e.g. 'Simulate flood in Pune'...)"
+                  placeholder="Query FloodGuard AI (e.g. 'Simulate flood in Pune'...)"
                   className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
                 />
                 <Button type="submit" size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl px-4">
