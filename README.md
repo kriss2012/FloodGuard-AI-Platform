@@ -15,10 +15,10 @@ FloodGuard AI is an **autonomous, multi-agent flood intelligence platform** for 
 |---------|---------|
 | **Real-Time Telemetry** | Open-Meteo Weather + Flood APIs, 60s polling across 12 Indian stations |
 | **AI Risk Analysis** | Groq (LLaMA 3.3 70B) Chain-of-Thought reasoning per sensor |
-| **Autonomous Actions** | NDRF pre-alerts, evacuation advisories, dam gate scheduling |
-| **Compliance Guardrails** | Every action verified against NDMA §4.2, CWC §12, State DM Act §30 |
-| **Full Auditability** | Timestamped agent log with full CoT trace per decision |
-| **Predictive Forecasting** | 7-day flood risk forecast from Open-Meteo Flood API |
+| **Autonomous Actions** | NDRF pre-alerts, evacuation advisories, dam gate scheduling; **Crisis Protocol §NDMA** | 
+| **Compliance Guardrails** | Multi-agent handshake verified against NDMA §4.2, CWC §12, State DM Act §30 | 
+| **Full Auditability** | Timestamped agent log with full CoT trace; Situational Report (PDF/CSV) | 
+| **v4.0 Roadmap** | Sat-Link, Edge-AI, and Hydrological Digital Twin integration |
 
 ---
 
@@ -99,7 +99,7 @@ See [IMPACT_MODEL.md](../IMPACT_MODEL.md) for the full quantified business case.
 | Criterion | How We Address It |
 |-----------|-------------------|
 | **Domain expertise depth** | Hydrology-aware thresholds, NDMA/CWC protocol integration |
-| **Compliance & guardrails** | 3-layer policy check before every autonomous action |
+| **Compliance & guardrails** | 3-layer policy check + Autonomous Crisis Protocol §NDMA §4.2 | 
 | **Edge-case handling** | API fallback engine, false-positive detection, low-confidence hold |
 | **Full task completion** | End-to-end: detect → analyze → decide → act → audit |
 | **Auditability** | Full CoT log visible in UI + JSON audit trail per decision |
