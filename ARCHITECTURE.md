@@ -5,7 +5,7 @@
 
 ## 1. System Overview
 
-FloodGuard AI is a **multi-agent autonomous flood intelligence platform** that monitors 12 major Indian river basins in real time, predicts flood onset with 94% accuracy, and takes autonomous emergency response actions within compliance guardrails defined by NDMA, CWC, and the State Disaster Management Acts.
+FloodGuard AI is a **v4.0 autonomous multi-agent flood intelligence platform** for India. It integrates real-time telemetry from 12 major river basins with LLaMA-based reasoning and NDMA-compliant guardrails to enable proactive disaster countermeasures.
 
 ---
 
@@ -15,7 +15,7 @@ FloodGuard AI is a **multi-agent autonomous flood intelligence platform** that m
 |-------|---------------|------------|
 | **Sensor Agent** | Polls Open-Meteo APIs every 60 seconds; normalizes water level and weather data | Open-Meteo Weather API, Open-Meteo Flood API |
 | **Hazard Agent** | Runs LLaMA 3.3 70B (Groq) Chain-of-Thought analysis on anomalous sensors; computes flood stage and timing | Groq API, Hydrology rules engine |
-| **Guardrail Agent** | Verifies every proposed action against NDMA Protocol v4.2, CWC §12, State DM Act §30 | Rule engine, Policy database |
+| **Guardrail Agent** | Verifies every proposed action against NDMA Protocol v4.2, CWC §12, State DM Act §30; Triggers Crisis Protocol §NDMA during simulations | Rule engine, Policy database |
 | **Action Agent** | Executes approved actions: NDRF alerts, community notifications, dam gate scheduling | Alert manager, mock NDMA API |
 | **Orchestrator** | Coordinates agent workflow; handles retry logic, rate limiting, fallbacks | React state machine, interval scheduler |
 
@@ -98,7 +98,8 @@ All autonomous actions are validated against:
 1. **NDMA Protocol v4.2** — Water level threshold classification
 2. **CWC Statutory Limit §12** — Rainfall flash flood index
 3. **State DM Act §30** — Civilian safety and evacuation authority levels
-4. **Tier Authorization** — Actions requiring Tier-3 escalation require human approval
+4. **Crisis Protocol §NDMA** — Automated execution of Directive §4.2 (Evacuation) or §3.1 (Thermal Mitigation) based on risk severity.
+5. **Tier Authorization** — Actions requiring Tier-3 escalation require human approval.
 
 ---
 
@@ -115,6 +116,8 @@ Groq (LLaMA 3.3) ──▶  CoT Flood Analysis ──▶  Hazard Agent  ──�
 ## 8. Scalability Notes
 
 - **Current**: 12 sensors, 60s polling, 2 AI analyses per sync cycle
-- **Scale-out**: Add sensors via `sensorLocations[]` config. Polling is parallelized via `Promise.all()`
-- **Production**: Replace polling with WebSocket/SSE stream from CWC Real-Time Dashboard
-- **LLM Cost**: Groq free tier supports 30 req/min → sufficient for 100+ sensors with batching
+- **v4.0 Roadmap**: 
+  - **Satellite-Link**: Deep forest monitoring via low-latency sat-comms.
+  - **Edge-AI**: Modular offline nodal intelligence for zero-connectivity zones.
+  - **Digital Twin**: High-fidelity 3D modeling of 12 major river basins.
+- **Production**: Replace polling with WebSocket/SSE stream from CWC Real-Time Dashboard.
