@@ -179,10 +179,10 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                    EcoTwin Lite
+                    FloodGuard AI
                   </h1>
                   <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 text-[10px] py-0 px-2 font-bold tracking-wider uppercase">
-                    v3.0 GENAI
+                    v4.0 AUTONOMOUS
                   </Badge>
                   <Badge className="bg-white/5 text-slate-400 border border-white/10 text-[9px] py-0 px-2 font-bold tracking-wider uppercase ml-1">
                     Team ECHOGEAR
@@ -286,7 +286,7 @@ export default function App() {
             <TabsList className="bg-slate-950/20 border border-white/5 flex-wrap h-auto gap-1 p-1 backdrop-blur-md rounded-xl">
               {[
                 { val: 'overview', label: 'Climate Deck', icon: Activity },
-                { val: 'command', label: 'EcoTwin Copilot', icon: Terminal },
+                { val: 'command', label: 'FloodGuard Copilot', icon: Terminal },
                 { val: 'map', label: 'Tactical Map', icon: Navigation },
                 { val: 'analytics', label: 'AI Analytics', icon: BarChart3 },
                 { val: 'alerts', label: `Alert Feed (${stats.active})`, icon: Bell },
@@ -452,23 +452,26 @@ export default function App() {
                 </div>
 
                 {/* Data Sources Footer */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {[
-                    { label: 'OpenStreetMap', desc: 'Geospatial Data (OSM)', icon: MapPin },
-                    { label: 'NOAA / Copernicus', desc: 'Climate Data & Forecasts', icon: CloudRain },
-                    { label: 'Synthetic IoT', desc: 'Real-time Nodal Telemetry', icon: Radio },
-                    { label: 'Disaster Guidelines', desc: 'RAG Context (NDMA/CWC)', icon: Shield },
-                  ].map(d => (
-                    <div key={d.label} className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl flex items-center gap-3">
-                      <div className="p-2 bg-slate-800 rounded-lg">
-                        <d.icon className="w-4 h-4 text-cyan-400" />
+                <div className="pt-8 border-t border-white/5">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 text-center">Verified Data Infrastructure & Citations</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {[
+                      { label: 'OpenStreetMap', desc: 'Geospatial Building/Road Data', icon: MapPin },
+                      { label: 'NOAA / Copernicus', desc: 'Satellite Climate Telemetry', icon: CloudRain },
+                      { label: 'Synthetic IoT', desc: 'Real-time Hydrological Sensors', icon: Radio },
+                      { label: 'NDMA Protocols', desc: 'Official Compliance RAG (2024)', icon: Shield },
+                    ].map(d => (
+                      <div key={d.label} className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl flex items-center gap-3">
+                        <div className="p-2 bg-slate-800 rounded-lg">
+                          <d.icon className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-white uppercase tracking-tight">{d.label}</p>
+                          <p className="text-[10px] text-slate-500 font-bold">{d.desc}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-black text-white uppercase tracking-tight">{d.label}</p>
-                        <p className="text-[10px] text-slate-500 font-bold">{d.desc}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </TabsContent>
@@ -857,12 +860,12 @@ export default function App() {
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
                     {[
-                      { title: 'Real-time IoT Integration', desc: 'Connect live sensor networks for instant data feeds.', progress: 40, icon: Zap },
-                      { title: 'Multi-City Scalability', desc: 'Deploy across 100+ Indian cities with localized models.', progress: 12, icon: MapPin },
-                      { title: 'AI Predictive Alerts', desc: 'Proactive warnings 24-48 hours before events.', progress: 65, icon: Brain },
-                      { title: 'Government Integration', desc: 'Direct API integration with NDMA and state disaster portals.', progress: 25, icon: Shield },
+                      { title: 'Satellite-Link Integration', desc: 'Deep forest & rural monitoring via low-latency sat-comms.', progress: 15, icon: Radio },
+                      { title: 'Edge-AI Field Modules', desc: 'Deploying offline nodal intelligence for zero-connectivity zones.', progress: 8, icon: Zap },
+                      { title: 'Citizen Response Portal', desc: 'Community crowdsourcing & verify-to-earn alert systems.', progress: 42, icon: Users },
+                      { title: 'Hydrological Digital Twin', desc: 'High-fidelity 3D modeling of 12 major river basins.', progress: 65, icon: Waves },
                     ].map(step => (
-                      <div key={step.title} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <div key={step.title} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-slate-800 rounded-xl"><step.icon className="w-4 h-4 text-cyan-400" /></div>
@@ -873,7 +876,7 @@ export default function App() {
                           </div>
                           <Badge className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px]">{step.progress}%</Badge>
                         </div>
-                        <Progress value={step.progress} className="h-1 bg-white/5" indicatorClassName="bg-cyan-500" />
+                        <Progress value={step.progress} className="h-1 bg-white/5" />
                       </div>
                     ))}
                   </CardContent>
@@ -898,7 +901,7 @@ export default function App() {
                       </div>
                     ))}
                     <div className="pt-6 border-t border-white/5 italic text-[10px] text-slate-400 font-bold">
-                      "EcoTwin Lite transforms cities from reactive to predictive."
+                      "FloodGuard AI v4.0 — From Reactive Alerts to Proactive Disaster Countermeasures."
                     </div>
                   </CardContent>
                 </Card>
@@ -942,7 +945,7 @@ export default function App() {
               <div ref={reportRef} className="space-y-6">
                 <div className="flex justify-between items-start border-b border-white/10 pb-4">
                   <div>
-                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">EcoTwin Lite Tactical Abstract</h3>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">FloodGuard AI Tactical Abstract</h3>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Reference: ET-AI-2026-{format(new Date(), 'HHmm')}</p>
                   </div>
                   {isSimulationActive && (
@@ -967,7 +970,7 @@ export default function App() {
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Situational Intelligence Summary</h4>
                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
                     <p className="text-xs text-slate-300 leading-relaxed italic">
-                      "EcoTwin AI has successfully retrieved relevant NDMA protocols for the current precipitation levels. 
+                      "FloodGuard AI has successfully retrieved relevant NDMA protocols for the current precipitation levels. 
                       Hydrological weights for downstream sectors are being recalibrated. Recommended posture: {stats.danger > 0 ? 'High-Alert/Immediate Action' : 'Passive Surveillance'}."
                     </p>
                   </div>
