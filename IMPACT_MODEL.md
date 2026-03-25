@@ -98,4 +98,4 @@ Lives saved (est.):  4,737,600 × 0.004% casualty rate saved = 190 lives/year
 
 ## Conclusion
 
-FloodGuard AI delivers **₹290–600 crore in annual flood damage mitigation** at **zero infrastructure cost** in its MVP phase, while potentially saving **190+ lives per year** across its initial 12 deployment zones. The technology is entirely built on free, open-source APIs and can scale to national coverage with negligible marginal cost.
+FloodGuard AI delivers **₹290–600 crore in annual flood damage mitigation** at **zero infrastructure cost** in its v4.0 phase, while potentially saving **190+ lives per year** across its initial 12 deployment zones. With the new **Autonomous Crisis Protocols** and **v4.0 Roadmap**, the platform is ready to scale to national coverage with modular Edge-AI and Satellite-Link capabilities.
