@@ -1,5 +1,5 @@
 /**
- * Knowledge Service - Grounding for EcoTwin Lite RAG
+ * Knowledge Service - Grounding for FloodGuard AI RAG
  * Contains disaster management protocols, policies, and historical context
  */
 
