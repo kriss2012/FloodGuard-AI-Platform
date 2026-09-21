@@ -107,3 +107,21 @@ See [IMPACT_MODEL.md](../IMPACT_MODEL.md) for the full quantified business case.
 ---
 
 *Built with ❤️ for ET AI Hackathon 2026*
+
+---
+
+## Security
+
+Please refer to [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines.
+
+## Contributing
+
+Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and development process.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+Developed and maintained by **[Krishna Patil](https://github.com/kriss2012)**.
