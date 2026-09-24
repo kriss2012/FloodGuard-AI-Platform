@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  floodguard-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: floodguard-ai:1.0.0
+    container_name: floodguard_intelligence_platform
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    environment:
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
